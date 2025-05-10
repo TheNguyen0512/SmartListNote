@@ -1,0 +1,6 @@
+@SmartList.API_HostAddress = http://localhost:5102
+
+GET {{SmartList.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

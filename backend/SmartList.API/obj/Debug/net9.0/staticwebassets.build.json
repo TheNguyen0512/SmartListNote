@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "BZaKbkwZH9k4kJr27LP7m2A3kMnrCa/HCSZLkdrkDTM=",
+  "Source": "SmartList.API",
+  "BasePath": "_content/SmartList.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
