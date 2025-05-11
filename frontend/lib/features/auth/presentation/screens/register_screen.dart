@@ -6,7 +6,7 @@ import 'package:smartlist/core/constants/sizes.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
 import 'package:smartlist/features/auth/presentation/screens/login_screen.dart';
-import 'package:smartlist/features/tasks/presentation/screens/task_list_screen.dart';
+import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -85,7 +85,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const TaskListScreen()),
+          MaterialPageRoute(builder: (context) => const NoteListScreen()),
           (route) => false,
         );
       } catch (e) {
@@ -122,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (authProvider.isAuthenticated) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const TaskListScreen()),
+          MaterialPageRoute(builder: (context) => const NoteListScreen()),
           (route) => false,
         );
       }

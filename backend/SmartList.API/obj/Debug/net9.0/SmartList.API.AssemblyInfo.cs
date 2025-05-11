@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SmartList.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f95d169329338115745147b9ca5dc7a4e76b067c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e051dbe801134a960ff4fd0cb4ad595c7cd08517")]
 [assembly: System.Reflection.AssemblyProductAttribute("SmartList.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SmartList.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

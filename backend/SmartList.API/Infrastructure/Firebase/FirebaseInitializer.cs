@@ -22,16 +22,17 @@ namespace SmartList.API.Infrastructure.Firebase
 
                 var credential = GoogleCredential.FromFile(serviceAccountPath);
 
-                // Khởi tạo FirebaseApp nếu chưa được tạo
+                // Initialize FirebaseApp if not already created
                 if (FirebaseApp.DefaultInstance == null)
                 {
                     FirebaseApp.Create(new AppOptions
                     {
-                        Credential = credential
+                        Credential = credential,
+                        ProjectId = "smart-list-7e746"
                     });
                 }
 
-                // Tạo FirestoreClient và FirestoreDb
+                // Create FirestoreClient and FirestoreDb
                 var firestoreClient = new FirestoreClientBuilder
                 {
                     Credential = credential
@@ -39,7 +40,7 @@ namespace SmartList.API.Infrastructure.Firebase
 
                 var firestoreDb = FirestoreDb.Create("smart-list-7e746", firestoreClient);
 
-                // Đăng ký FirestoreDb trong DI container
+                // Register FirestoreDb in DI container
                 services.AddSingleton(firestoreDb);
             }
             catch (Exception ex)

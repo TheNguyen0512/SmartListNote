@@ -1,16 +1,14 @@
-using FirebaseAdmin;
-using Google.Apis.Auth.OAuth2;
-using Google.Cloud.Firestore;
-using Google.Cloud.Firestore.V1;
-using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using SmartList.API.Application.Interface;
-using SmartList.API.Application.Services;
+using FirebaseAdmin;
 using SmartList.API.Infrastructure.Firebase;
+using SmartList.API.Application.Interface;
 using SmartList.API.Infrastructure.Interface;
-using System;
-using System.IO;
+using SmartList.API.Application.Services;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +23,71 @@ FirebaseInitializer.Initialize(builder.Services);
 // Register services and repositories
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, FirebaseAuthRepository>();
+builder.Services.AddScoped<INoteRepository, FirebaseNoteRepository>();
+builder.Services.AddScoped<INoteService, NoteService>();
+
+// Configure JWT Authentication for Firebase
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.Authority = "https://securetoken.google.com/smart-list-7e746";
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = "https://securetoken.google.com/smart-list-7e746",
+        ValidateAudience = true,
+        ValidAudience = "smart-list-7e746",
+        ValidateLifetime = true,
+        // Disable issuer signing key validation since Firebase handles it
+        ValidateIssuerSigningKey = false,
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"JWT validation failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            var token = context.SecurityToken as JwtSecurityToken;
+            if (token == null)
+            {
+                Console.WriteLine("No valid JWT token found");
+                return Task.CompletedTask;
+            }
+
+            Console.WriteLine("Token claims:");
+            foreach (var claim in token.Claims)
+            {
+                Console.WriteLine($"  {claim.Type}: {claim.Value}");
+            }
+
+            var subClaim = token.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+            if (!string.IsNullOrEmpty(subClaim))
+            {
+                var identity = context.Principal?.Identity as ClaimsIdentity;
+                if (identity != null)
+                {
+                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, subClaim));
+                    Console.WriteLine($"Added 'sub' as NameIdentifier: {subClaim}");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No 'sub' claim found in token");
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -34,8 +97,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

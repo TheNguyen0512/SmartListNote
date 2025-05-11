@@ -23,14 +23,14 @@ namespace SmartList.API.Application.Services
             try
             {
                 Console.WriteLine($"Verifying ID token for email: {email}");
-                var decodedToken = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
                 Console.WriteLine($"Decoded token audience: {decodedToken.Audience}");
                 if (decodedToken.Claims["email"]?.ToString() != email)
                 {
                     throw new Exception("invalid-token");
                 }
 
-                var userRecord = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.GetUserByEmailAsync(email);
+                var userRecord = await FirebaseAuth.DefaultInstance.GetUserByEmailAsync(email);
                 var user = new User
                 {
                     Id = userRecord.Uid,
@@ -42,7 +42,7 @@ namespace SmartList.API.Application.Services
                 };
                 await _authRepository.SaveUserAsync(user);
 
-                var token = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
+                var token = await FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
                 Console.WriteLine($"Login successful for user: {user.Id}");
                 return (user, token);
             }
@@ -69,7 +69,7 @@ namespace SmartList.API.Application.Services
                     Password = password,
                     DisplayName = fullName
                 };
-                var userRecord = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.CreateUserAsync(userRecordArgs);
+                var userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(userRecordArgs);
                 var user = new User
                 {
                     Id = userRecord.Uid,
@@ -79,7 +79,7 @@ namespace SmartList.API.Application.Services
                     UpdatedAt = DateTime.UtcNow
                 };
                 await _authRepository.SaveUserAsync(user);
-                var token = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
+                var token = await FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
                 Console.WriteLine($"Registration successful for user: {user.Id}");
                 return (user, token);
             }
@@ -100,7 +100,7 @@ namespace SmartList.API.Application.Services
             try
             {
                 Console.WriteLine($"Verifying Google ID token: {idToken.Substring(0, Math.Min(20, idToken.Length))}...");
-                var decodedToken = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
+                var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken);
                 Console.WriteLine($"Decoded token audience: {decodedToken.Audience}");
                 var uid = decodedToken.Uid;
                 Console.WriteLine($"Google token verified, UID: {uid}, Claims: {System.Text.Json.JsonSerializer.Serialize(decodedToken.Claims)}");
@@ -108,13 +108,13 @@ namespace SmartList.API.Application.Services
                 UserRecord userRecord;
                 try
                 {
-                    userRecord = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.GetUserAsync(uid);
+                    userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(uid);
                     Console.WriteLine($"Existing user found: {uid}");
                 }
                 catch (FirebaseAuthException ex) when (ex.ErrorCode.ToString() == "USER_NOT_FOUND")
                 {
                     Console.WriteLine($"Creating new user for UID: {uid}");
-                    userRecord = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.CreateUserAsync(new UserRecordArgs
+                    userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(new UserRecordArgs
                     {
                         Uid = uid,
                         Email = decodedToken.Claims["email"]?.ToString(),
@@ -134,7 +134,7 @@ namespace SmartList.API.Application.Services
                 };
                 await _authRepository.SaveUserAsync(user);
 
-                var token = await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
+                var token = await FirebaseAuth.DefaultInstance.CreateCustomTokenAsync(userRecord.Uid);
                 Console.WriteLine($"Google Sign-In successful for user: {user.Id}");
                 return (user, token);
             }
@@ -160,7 +160,7 @@ namespace SmartList.API.Application.Services
             try
             {
                 Console.WriteLine($"Logging out user: {userId}");
-                await FirebaseAdmin.Auth.FirebaseAuth.DefaultInstance.RevokeRefreshTokensAsync(userId);
+                await FirebaseAuth.DefaultInstance.RevokeRefreshTokensAsync(userId);
                 Console.WriteLine($"Logout successful for user: {userId}");
             }
             catch (FirebaseAuthException ex)

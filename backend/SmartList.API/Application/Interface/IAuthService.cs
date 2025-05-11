@@ -11,4 +11,4 @@ namespace SmartList.API.Application.Interface
         Task LogoutAsync(string userId);
         Task<User> GetUserAsync(string userId);
     }
-}
+}   

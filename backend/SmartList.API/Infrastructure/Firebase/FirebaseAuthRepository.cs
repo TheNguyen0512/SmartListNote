@@ -17,11 +17,16 @@ namespace SmartList.API.Infrastructure.Firebase
 
         public async Task<User> GetUserAsync(string userId)
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            }
+
             var docRef = _firestoreDb.Collection("users").Document(userId);
             var snapshot = await docRef.GetSnapshotAsync();
             if (!snapshot.Exists)
             {
-                throw new Exception("user-not-found");
+                throw new Exception($"User not found for ID: {userId}");
             }
 
             var data = snapshot.ToDictionary();
@@ -38,6 +43,11 @@ namespace SmartList.API.Infrastructure.Firebase
 
         public async Task SaveUserAsync(User user)
         {
+            if (user == null || string.IsNullOrEmpty(user.Id))
+            {
+                throw new ArgumentException("User or User ID cannot be null or empty", nameof(user));
+            }
+
             var docRef = _firestoreDb.Collection("users").Document(user.Id);
             var data = new
             {

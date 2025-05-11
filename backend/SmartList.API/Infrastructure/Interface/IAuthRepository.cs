@@ -1,4 +1,5 @@
 using SmartList.API.Domain.Entities;
+using System.Threading.Tasks;
 
 namespace SmartList.API.Infrastructure.Interface
 {

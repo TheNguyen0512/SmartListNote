@@ -1,74 +1,77 @@
-import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:smartlist/features/auth/domain/entities/user.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
-  bool _isLoading = false;
   String? _errorMessage;
-  String? _token;
+  bool _isLoading = false;
 
   User? get user => _user;
-  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _user != null;
   String? get errorMessage => _errorMessage;
-  bool get isAuthenticated => _user != null && _token != null;
-
-  static const String _baseUrl = 'http://10.0.2.2:5102/api/auth'; // For Android emulator
-  // For physical device, use your machine's IP, e.g., 'http://192.168.1.100:5102/api/auth'
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
+  bool get isLoading => _isLoading;
 
   AuthProvider() {
-    _loadToken();
+    // Listen for auth state changes
+    _auth.authStateChanges().listen((User? user) {
+      _user = user;
+      print("Auth state changed: ${user?.uid}, email: ${user?.email}");
+      notifyListeners();
+    });
   }
 
-  Future<void> _loadToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token');
-    if (_token != null) {
-      await _fetchUser();
-    }
-    notifyListeners();
-  }
-
-  Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', token);
-    _token = token;
-  }
-
-  Future<void> _clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    _token = null;
-  }
-
-  Future<void> _fetchUser() async {
-    if (_token == null) return;
+  Future<void> register(String email, String password, String fullName) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/user/${_user?.id}'),
-        headers: {'Authorization': 'Bearer $_token'},
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      // Create user with email and password
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
       );
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        _user = UserModel.fromJson(json);
+      _user = userCredential.user;
+
+      if (_user != null) {
+        // Update the user's display name
+        await _user!.updateDisplayName(fullName.trim());
+        // Refresh the user to ensure the display name is updated
+        await _user!.reload();
+        _user = _auth.currentUser;
+        print(
+          "Registration successful: ${_user?.uid}, email: ${_user?.email}, displayName: ${_user?.displayName}",
+        );
       } else {
-        await _clearToken();
-        _user = null;
+        throw Exception("User creation failed: user is null");
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching user: $e');
+      print("Registration error: $e");
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'email-already-in-use':
+            _errorMessage = 'emailAlreadyInUse';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'invalidEmail';
+            break;
+          case 'weak-password':
+            _errorMessage = 'weakPassword';
+            break;
+          default:
+            _errorMessage = 'authError';
+        }
+      } else {
+        _errorMessage = 'authError';
       }
-      await _clearToken();
-      _user = null;
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> login(String email, String password) async {
@@ -77,42 +80,24 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      print('Sending login request to: $_baseUrl/login');
-      final credential = await _firebaseAuth.signInWithEmailAndPassword(
+      final userCredential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
-      final idToken = await credential.user?.getIdToken();
-
-      if (idToken == null) {
-        throw Exception('Failed to obtain ID token');
-      }
-
-      final response = await http.post(
-        Uri.parse('$_baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email.trim(), 'idToken': idToken}),
+      _user = userCredential.user;
+      print(
+        "Login successful: ${userCredential.user?.uid}, email: ${userCredential.user?.email}",
       );
-
-      print('Login response: ${response.statusCode} ${response.body}');
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        _user = UserModel.fromJson(json['user']);
-        await _saveToken(json['token']);
-      } else {
-        _errorMessage = _mapHttpError(response);
-      }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = e is firebase_auth.FirebaseAuthException ? _mapFirebaseAuthError(e) : 'authError';
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
-      notifyListeners();
+      print("Login error: $e");
+      _errorMessage =
+          e.toString().contains('invalid-email')
+              ? 'invalidEmail'
+              : 'wrongCredentials';
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
@@ -122,163 +107,44 @@ class AuthProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      print('Starting Google Sign-In');
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        // Replace with Web Client ID from google-services.json (client_type: 3)
-        serverClientId: '815920931427-glq3neave4606sojtgb4hhf13jacnc4k.apps.googleusercontent.com',
-        scopes: ['email', 'https://www.googleapis.com/auth/userinfo.profile'],
-      );
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        print('Google Sign-In cancelled by user');
-        _isLoading = false;
         _errorMessage = 'googleSignInCancelled';
-        notifyListeners();
         return;
       }
 
-      print('Google Sign-In successful, fetching authentication');
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      print('Google auth tokens: idToken=${googleAuth.idToken?.substring(0, 20)}..., accessToken=${googleAuth.accessToken?.substring(0, 20)}...');
-
-      print('Sending Google Sign-In request to: $_baseUrl/google');
-      final response = await http.post(
-        Uri.parse('$_baseUrl/google'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'accessToken': googleAuth.accessToken,
-          'idToken': googleAuth.idToken,
-        }),
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
-      print('Google Sign-In response: ${response.statusCode} ${response.body}');
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        _user = UserModel.fromJson(json['user']);
-        await _saveToken(json['token']);
-      } else {
-        _errorMessage = _mapHttpError(response);
-      }
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = e is PlatformException && e.code == 'sign_in_failed' ? 'googleSignInFailed' : 'authError';
-      if (kDebugMode) {
-        print('Google Sign-In error: $e');
-      }
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> register(String email, String password, String fullName) async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      print('Sending register request to: $_baseUrl/register');
-      final response = await http.post(
-        Uri.parse('$_baseUrl/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email.trim(),
-          'password': password.trim(),
-          'fullName': fullName.trim(),
-        }),
+      final userCredential = await _auth.signInWithCredential(credential);
+      _user = userCredential.user;
+      print(
+        "Google sign-in successful: ${userCredential.user?.uid}, email: ${userCredential.user?.email}",
       );
-
-      print('Register response: ${response.statusCode} ${response.body}');
-      if (response.statusCode == 201) {
-        final json = jsonDecode(response.body);
-        _user = UserModel.fromJson(json['user']);
-        await _saveToken(json['token']);
-      } else {
-        _errorMessage = _mapHttpError(response);
-      }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      _errorMessage = 'authError';
-      print('Register error: $e');
-      notifyListeners();
+      print("Google sign-in error: $e");
+      _errorMessage = 'googleSignInFailed';
       rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> logout() async {
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      print('Sending logout request to: $_baseUrl/logout');
-      await http.post(
-        Uri.parse('$_baseUrl/logout'),
-        headers: {'Authorization': 'Bearer $_token'},
-        body: jsonEncode({'userId': _user?.id}),
-      );
-
-      await GoogleSignIn().signOut();
-      await _firebaseAuth.signOut();
-      await _clearToken();
-      _user = null;
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      _errorMessage = 'logoutFailed';
-      print('Logout error: $e');
-      notifyListeners();
-      rethrow;
-    }
+    await _auth.signOut();
+    await _googleSignIn.signOut();
+    _user = null;
+    notifyListeners();
   }
 
-  String _mapHttpError(http.Response response) {
-    final json = jsonDecode(response.body);
-    final error = json['error']?['message'] ?? 'authError';
-    switch (error) {
-      case 'invalid-email':
-        return 'invalidEmail';
-      case 'wrongCredentials':
-        return 'wrongCredentials';
-      case 'email-already-in-use':
-        return 'emailInUse';
-      case 'weak-password':
-        return 'weakPassword';
-      case 'network-request-failed':
-        return 'networkError';
-      case 'too-many-requests':
-        return 'tooManyRequests';
-      case 'invalid-google-token':
-        return 'invalidGoogleToken';
-      case 'invalid-audience':
-        return 'invalidAudience';
-      default:
-        return 'authError';
-    }
-  }
-
-  String _mapFirebaseAuthError(firebase_auth.FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-email':
-        return 'invalidEmail';
-      case 'user-not-found':
-      case 'wrong-password':
-        return 'wrongCredentials';
-      case 'email-already-in-use':
-        return 'emailInUse';
-      case 'weak-password':
-        return 'weakPassword';
-      case 'too-many-requests':
-        return 'tooManyRequests';
-      default:
-        return 'authError';
-    }
+  void reset() {
+    _user = null;
+    _errorMessage = null;
+    _isLoading = false;
+    notifyListeners();
   }
 }
