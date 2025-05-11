@@ -54,4 +54,5 @@ namespace SmartList.API.Infrastructure.Firebase
             }
         }
     }
+    
 }

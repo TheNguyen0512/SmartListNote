@@ -50,10 +50,10 @@ class Note {
         'title': title,
         'description': description,
         'isCompleted': isCompleted,
-        'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
+        'dueDate': dueDate?.toUtc().toIso8601String(),
         'priority': priority.name,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'updatedAt': Timestamp.fromDate(updatedAt),
+        'createdAt': createdAt.toUtc().toIso8601String(),
+        'updatedAt': updatedAt.toUtc().toIso8601String(),
       };
 
   factory Note.fromJson(Map<String, dynamic> json, {String? id}) {

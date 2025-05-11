@@ -1,24 +1,21 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import '../entities/note.dart';
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartlist/features/notes/domain/entities/note.dart';
 
 class NoteProvider extends ChangeNotifier {
   List<Note> _notes = [];
-  bool _isLoading = false;
   String? _errorMessage;
+  bool _isLoading = false;
+  Timer? _debounce;
+  Timer? _toggleDebounce; // Add a debounce timer for toggle
 
   List<Note> get notes => _notes;
-  bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get isLoading => _isLoading;
 
-  NoteProvider() {
-    loadNotes();
-  }
-
-  Timer? _debounce;
   Future<void> loadNotes() async {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () async {
@@ -29,7 +26,6 @@ class NoteProvider extends ChangeNotifier {
   Future<void> _loadNotes() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("No user logged in");
       _errorMessage = 'userNotLoggedIn';
       _isLoading = false;
       notifyListeners();
@@ -43,7 +39,7 @@ class NoteProvider extends ChangeNotifier {
         _errorMessage = null;
         notifyListeners();
 
-        final token = await user.getIdToken(true); // Force refresh
+        final token = await user.getIdToken(true);
         if (token == null) {
           print("Failed to get ID token on attempt $attempt");
           _errorMessage = 'failedToGetToken';
@@ -52,9 +48,7 @@ class NoteProvider extends ChangeNotifier {
           return;
         }
 
-        print(
-          "Full ID Token (first 20 chars): ${token.length > 20 ? token.substring(0, 20) : token}...",
-        );
+        print("Full ID Token: $token"); // Log the full token for debugging
 
         final response = await http.get(
           Uri.parse('http://10.0.2.2:5102/api/Note'),
@@ -110,9 +104,7 @@ class NoteProvider extends ChangeNotifier {
   Future<void> addNote(Note note) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("No user logged in for addNote");
       _errorMessage = 'userNotLoggedIn';
-      _isLoading = false;
       notifyListeners();
       return;
     }
@@ -122,34 +114,13 @@ class NoteProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final noteWithTimestamps = note.copyWith(
-        createdAt: DateTime.now().toUtc(), // Convert to UTC
-        updatedAt: DateTime.now().toUtc(), // Convert to UTC
-      );
-
       final token = await user.getIdToken(true);
       if (token == null) {
-        print("Failed to get ID token for addNote");
         _errorMessage = 'failedToGetToken';
         _isLoading = false;
         notifyListeners();
         return;
       }
-
-      final requestBody = jsonEncode({
-        'title': noteWithTimestamps.title,
-        'description': noteWithTimestamps.description,
-        'isCompleted': noteWithTimestamps.isCompleted,
-        'dueDate': noteWithTimestamps.dueDate?.toIso8601String(),
-        'priority': noteWithTimestamps.priority.toString().split('.').last,
-        'createdAt':
-            noteWithTimestamps.createdAt.toIso8601String(), // Non-nullable
-        'updatedAt':
-            noteWithTimestamps.updatedAt.toIso8601String(), // Non-nullable
-      });
-
-      print("Sending POST /api/Note with token: ${token.substring(0, 20)}...");
-      print("Request body: $requestBody");
 
       final response = await http.post(
         Uri.parse('http://10.0.2.2:5102/api/Note'),
@@ -157,46 +128,31 @@ class NoteProvider extends ChangeNotifier {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: requestBody,
-      );
-
-      print(
-        "POST /api/Note response: status=${response.statusCode}, body=${response.body}",
+        body: jsonEncode(note.toJson()),
       );
 
       if (response.statusCode == 201) {
-        final json = jsonDecode(response.body);
-        final newNote = Note.fromJson(json, id: json['id']);
+        final newNote = Note.fromJson(
+          jsonDecode(response.body),
+          id: jsonDecode(response.body)['id'],
+        );
         _notes.add(newNote);
-        print(
-          "Added note to local list: ${newNote.id}, title: ${newNote.title}",
-        );
+        notifyListeners();
       } else {
-        final errorData = jsonDecode(response.body);
-        _errorMessage = errorData['error'] ?? 'failedToAddTask';
-        print(
-          "Error response: ${_errorMessage}, details: ${errorData['details'] ?? 'No details'}",
-        );
+        _errorMessage = 'failedToAddTask';
       }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      print("Error in addNote: $e");
-      _errorMessage =
-          e.toString().contains('permission-denied')
-              ? 'permissionDenied'
-              : 'failedToAddTask';
+      _errorMessage = 'failedToAddTask';
+      print("Error adding note: $e");
+    } finally {
       _isLoading = false;
       notifyListeners();
-      rethrow;
     }
   }
 
   Future<void> updateNote(Note note) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || note.id == null) {
-      print("No user logged in or invalid note ID for updateNote");
+    if (user == null) {
       _errorMessage = 'userNotLoggedIn';
       notifyListeners();
       return;
@@ -207,139 +163,44 @@ class NoteProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      final updatedNote = note.copyWith(updatedAt: DateTime.now());
-
       final token = await user.getIdToken(true);
       if (token == null) {
-        print("Failed to get ID token for updateNote");
         _errorMessage = 'failedToGetToken';
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      print(
-        "Sending PUT /api/Note/${note.id} with token: ${token.substring(0, 20)}...",
-      );
       final response = await http.put(
         Uri.parse('http://10.0.2.2:5102/api/Note/${note.id}'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'id': updatedNote.id,
-          'title': updatedNote.title,
-          'description': updatedNote.description,
-          'isCompleted': updatedNote.isCompleted,
-          'dueDate': updatedNote.dueDate?.toIso8601String(),
-          'priority': updatedNote.priority.toString().split('.').last,
-          'createdAt': updatedNote.createdAt?.toIso8601String(),
-          'updatedAt': updatedNote.updatedAt?.toIso8601String(),
-        }),
-      );
-
-      print(
-        "PUT /api/Note/${note.id} response: status=${response.statusCode}, body=${response.body}",
+        body: jsonEncode(note.toJson()),
       );
 
       if (response.statusCode == 200) {
         final index = _notes.indexWhere((n) => n.id == note.id);
         if (index != -1) {
-          _notes[index] = updatedNote;
+          _notes[index] = note.copyWith(updatedAt: DateTime.now());
+          notifyListeners();
         }
       } else {
-        final errorData = jsonDecode(response.body);
-        _errorMessage = errorData['error'] ?? 'updateFailed';
-        print(
-          "Error response: ${_errorMessage}, details: ${errorData['details'] ?? 'No details'}",
-        );
+        _errorMessage = 'failedToUpdateTask';
       }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      print("Error in updateNote: $e");
-      _errorMessage = 'updateFailed';
+      _errorMessage = 'failedToUpdateTask';
+      print("Error updating note: $e");
+    } finally {
       _isLoading = false;
       notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> toggleNoteStatus(String id) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      print("No user logged in for toggleNoteStatus");
-      _errorMessage = 'userNotLoggedIn';
-      notifyListeners();
-      return;
-    }
-
-    try {
-      _isLoading = true;
-      _errorMessage = null;
-      notifyListeners();
-
-      final index = _notes.indexWhere((note) => note.id == id);
-      if (index == -1) {
-        print("Note with ID $id not found in local list");
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      final token = await user.getIdToken(true);
-      if (token == null) {
-        print("Failed to get ID token for toggleNoteStatus");
-        _errorMessage = 'failedToGetToken';
-        _isLoading = false;
-        notifyListeners();
-        return;
-      }
-
-      print(
-        "Sending PATCH /api/Note/$id/toggle with token: ${token.substring(0, 20)}...",
-      );
-      final response = await http.patch(
-        Uri.parse('http://10.0.2.2:5102/api/Note/$id/toggle'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      print(
-        "PATCH /api/Note/$id/toggle response: status=${response.statusCode}, body=${response.body}",
-      );
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        final updatedNote = Note.fromJson(json, id: json['id']);
-        _notes[index] = updatedNote;
-      } else {
-        final errorData = jsonDecode(response.body);
-        _errorMessage = errorData['error'] ?? 'updateFailed';
-        print(
-          "Error response: ${_errorMessage}, details: ${errorData['details'] ?? 'No details'}",
-        );
-      }
-
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      print("Error in toggleNoteStatus: $e");
-      _errorMessage = 'updateFailed';
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
     }
   }
 
   Future<void> deleteNote(String id) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("No user logged in for deleteNote");
       _errorMessage = 'userNotLoggedIn';
       notifyListeners();
       return;
@@ -347,21 +208,19 @@ class NoteProvider extends ChangeNotifier {
 
     try {
       _isLoading = true;
-      _errorMessage = null;
+      _errorMessage = null; // Clear any previous error message
       notifyListeners();
 
       final token = await user.getIdToken(true);
       if (token == null) {
-        print("Failed to get ID token for deleteNote");
         _errorMessage = 'failedToGetToken';
         _isLoading = false;
         notifyListeners();
         return;
       }
 
-      print(
-        "Sending DELETE /api/Note/$id with token: ${token.substring(0, 20)}...",
-      );
+      print("Full ID Token for delete: $token"); // Log the token for debugging
+
       final response = await http.delete(
         Uri.parse('http://10.0.2.2:5102/api/Note/$id'),
         headers: {
@@ -375,29 +234,79 @@ class NoteProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 204) {
+        // Backend returns 204 No Content on successful deletion
         _notes.removeWhere((note) => note.id == id);
+        _errorMessage = null; // Ensure error message is cleared on success
+        print("Successfully deleted note $id");
       } else {
-        final errorData = jsonDecode(response.body);
-        _errorMessage = errorData['error'] ?? 'deleteFailed';
+        _errorMessage = 'deleteFailed';
         print(
-          "Error response: ${_errorMessage}, details: ${errorData['details'] ?? 'No details'}",
+          "Failed to delete note $id: ${response.statusCode}, ${response.body}",
         );
       }
-
-      _isLoading = false;
-      notifyListeners();
     } catch (e) {
-      print("Error in deleteNote: $e");
       _errorMessage = 'deleteFailed';
+      print("Error deleting note $id: $e");
+    } finally {
       _isLoading = false;
       notifyListeners();
-      rethrow;
+    }
+  }
+
+  void toggleNoteStatus(String id) {
+    final index = _notes.indexWhere((note) => note.id == id);
+    if (index != -1) {
+      final note = _notes[index];
+      final updatedNote = note.copyWith(
+        isCompleted: !note.isCompleted,
+        updatedAt: DateTime.now(),
+      );
+      _notes[index] = updatedNote;
+      notifyListeners();
+
+      // Debounce the backend update
+      if (_toggleDebounce?.isActive ?? false) _toggleDebounce?.cancel();
+      _toggleDebounce = Timer(const Duration(milliseconds: 500), () {
+        _updateNoteInBackground(updatedNote);
+      });
+    }
+  }
+
+  Future<void> _updateNoteInBackground(Note note) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final token = await user.getIdToken(true);
+      if (token == null) return;
+
+      print(
+        "Full ID Token for update: $token",
+      ); // Log the full token for debugging
+
+      final response = await http.put(
+        Uri.parse('http://10.0.2.2:5102/api/Note/${note.id}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(note.toJson()),
+      );
+
+      if (response.statusCode != 200) {
+        print(
+          "Background update failed for note ${note.id}: ${response.statusCode}, ${response.body}",
+        );
+      }
+    } catch (e) {
+      print("Background update error for note ${note.id}: $e");
     }
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _toggleDebounce?.cancel(); // Clean up toggle debounce
     super.dispose();
   }
 }

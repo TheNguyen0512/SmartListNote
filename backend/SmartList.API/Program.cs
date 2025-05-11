@@ -5,10 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using FirebaseAdmin;
 using SmartList.API.Infrastructure.Firebase;
 using SmartList.API.Application.Interface;
-using SmartList.API.Infrastructure.Interface;
 using SmartList.API.Application.Services;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using SmartList.API.Infrastructure.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +40,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = "smart-list-7e746",
         ValidateLifetime = true,
-        // Disable issuer signing key validation since Firebase handles it
-        ValidateIssuerSigningKey = false,
+        ValidateIssuerSigningKey = false, // Let Firebase Admin SDK handle signature validation
     };
     options.Events = new JwtBearerEvents
     {
@@ -52,38 +49,7 @@ builder.Services.AddAuthentication(options =>
             Console.WriteLine($"JWT validation failed: {context.Exception.Message}");
             return Task.CompletedTask;
         },
-        OnTokenValidated = context =>
-        {
-            var token = context.SecurityToken as JwtSecurityToken;
-            if (token == null)
-            {
-                Console.WriteLine("No valid JWT token found");
-                return Task.CompletedTask;
-            }
-
-            Console.WriteLine("Token claims:");
-            foreach (var claim in token.Claims)
-            {
-                Console.WriteLine($"  {claim.Type}: {claim.Value}");
-            }
-
-            var subClaim = token.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
-            if (!string.IsNullOrEmpty(subClaim))
-            {
-                var identity = context.Principal?.Identity as ClaimsIdentity;
-                if (identity != null)
-                {
-                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, subClaim));
-                    Console.WriteLine($"Added 'sub' as NameIdentifier: {subClaim}");
-                }
-            }
-            else
-            {
-                Console.WriteLine("No 'sub' claim found in token");
-            }
-
-            return Task.CompletedTask;
-        }
+        // Remove OnTokenValidated since we're relying on Firebase Admin SDK
     };
 });
 

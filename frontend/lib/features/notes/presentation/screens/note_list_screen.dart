@@ -163,10 +163,10 @@ class NoteListScreenState extends State<NoteListScreen> {
 
                 await provider.loadNotes();
 
-                // Đảm bảo ít nhất 2 giây hiển thị loading
+                // Đảm bảo ít nhất 0 giây hiển thị loading
                 final elapsed = stopwatch.elapsed;
-                if (elapsed < const Duration(seconds: 2)) {
-                  await Future.delayed(Duration(seconds: 2) - elapsed);
+                if (elapsed < const Duration(seconds: 0)) {
+                  await Future.delayed(Duration(seconds: 0) - elapsed);
                 }
               },
               child:
@@ -244,7 +244,7 @@ class NoteListScreenState extends State<NoteListScreen> {
                                   children: [
                                     GestureDetector(
                                       onTap: () {
-                                        // provider.toggleNoteStatus(note.id!);
+                                        provider.toggleNoteStatus(note.id!);
                                       },
                                       child: Container(
                                         width: 24,
@@ -329,9 +329,26 @@ class NoteListScreenState extends State<NoteListScreen> {
                                         Icons.delete,
                                         color: Colors.red,
                                       ),
-                                      onPressed: () {
-                                        // provider.deleteNote(note.id!);
-                                        // _showSnackBar(localizations.getString('taskDeleted'));
+                                      onPressed: () async {
+                                        final provider =
+                                            Provider.of<NoteProvider>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        await provider.deleteNote(note.id!);
+                                        if (provider.errorMessage == null) {
+                                          _showSnackBar(
+                                            localizations.getString(
+                                              'taskDeleted',
+                                            ),
+                                          );
+                                        } else {
+                                          _showSnackBar(
+                                            localizations.getString(
+                                              'deleteFailed',
+                                            ),
+                                          );
+                                        }
                                       },
                                     ),
                                   ],
