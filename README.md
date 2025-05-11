@@ -101,8 +101,8 @@ dotnet test
 
 ## 🚀 Triển khai
 
-- **Frontend**: có thể build cho Android, iOS, Web
-- **Backend**: triển khai dễ dàng lên bất kỳ dịch vụ hỗ trợ .NET (Azure, Render, Heroku, v.v.)
+- **Frontend**: có thể build cho Android
+- **Backend**: triển khai dễ dàng lên bất kỳ dịch vụ hỗ trợ .NET
 
 ---
 
@@ -113,8 +113,3 @@ dotnet test
 - Triển khai các tính năng phổ biến trong ứng dụng thực tế
 
 ---
-
-## 👨‍💻 Tác giả
-
-- 📧 Email: [your_email@example.com]
-- 🌐 Github: [github.com/your-username]
