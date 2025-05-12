@@ -2,3 +2,8 @@ backend/SmartList.API/bin/Debug/net9.0/service-account.json
 backend/SmartList.API/service-account.json
 frontend/.vscode/settings.json
 frontend/android/app/google-services.json
+frontend/.metadata
+frontend/pubspec.yaml
+frontend/pubspec.lock
+frontend/analysis_options.yaml
+frontend/devtools_options.yaml
