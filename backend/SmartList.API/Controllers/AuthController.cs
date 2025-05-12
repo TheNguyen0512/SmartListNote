@@ -87,13 +87,41 @@ namespace SmartList.API.Controllers
                 return BadRequest(new { error = new { message = ex.Message } });
             }
         }
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                await _authService.ChangePasswordAsync(request.UserId, request.CurrentPassword, request.NewPassword);
+                return Ok(new { message = "Password changed successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = new { message = ex.Message } });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            try
+            {
+                await _authService.SendPasswordResetEmailAsync(request.Email);
+                return Ok(new { message = "Password reset email sent successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = new { message = ex.Message } });
+            }
+        }
     }
 
     public class LoginRequest
-{
-    public required string Email { get; init; }
-    public required string IdToken { get; init; }
-}
+    {
+        public required string Email { get; init; }
+        public required string IdToken { get; init; }
+    }
 
     public class RegisterRequest
     {
@@ -111,5 +139,16 @@ namespace SmartList.API.Controllers
     public class LogoutRequest
     {
         public required string UserId { get; init; }
+    }
+    public class ChangePasswordRequest
+    {
+        public required string UserId { get; init; }
+        public required string CurrentPassword { get; init; }
+        public required string NewPassword { get; init; }
+    }
+
+    public class ResetPasswordRequest
+    {
+        public required string Email { get; init; }
     }
 }

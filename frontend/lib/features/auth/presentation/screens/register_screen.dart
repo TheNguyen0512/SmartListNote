@@ -1,12 +1,12 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
-import 'package:smartlist/features/auth/presentation/screens/login_screen.dart';
-import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
+import 'package:smartlist/routing/route_paths.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -60,14 +60,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     setState(() {
-      _nameError = _fullNameController.text.trim().isEmpty ? localizations.getString('fullNameRequired') : null;
-      _emailError = !validateEmail(_emailController.text) ? localizations.getString('invalidEmail') : null;
-      _passwordError = !validatePassword(_passwordController.text)
-          ? localizations.getString('passwordStrength')
-          : null;
-      _confirmPasswordError = !validatePasswordMatch()
-          ? localizations.getString('passwordsNotMatch')
-          : null;
+      _nameError =
+          _fullNameController.text.trim().isEmpty
+              ? localizations.getString('fullNameRequired')
+              : null;
+      _emailError =
+          !validateEmail(_emailController.text)
+              ? localizations.getString('invalidEmail')
+              : null;
+      _passwordError =
+          !validatePassword(_passwordController.text)
+              ? localizations.getString('passwordStrength')
+              : null;
+      _confirmPasswordError =
+          !validatePasswordMatch()
+              ? localizations.getString('passwordsNotMatch')
+              : null;
     });
 
     if (_formKey.currentState!.validate()) {
@@ -83,15 +91,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           SnackBar(content: Text(localizations.getString('registerSuccess'))),
         );
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const NoteListScreen()),
-          (route) => false,
-        );
+        context.go(RoutePaths.noteList);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(localizations.getString(authProvider.errorMessage ?? 'authError'))),
+          SnackBar(
+            content: Text(
+              localizations.getString(authProvider.errorMessage ?? 'authError'),
+            ),
+          ),
         );
       }
     }
@@ -120,11 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (authProvider.isAuthenticated) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const NoteListScreen()),
-          (route) => false,
-        );
+        context.go(RoutePaths.noteList);
       }
     } catch (e) {
       if (!mounted) return;
@@ -158,12 +162,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Image.network(
                     'https://readdy.ai/api/search-image?query=Modern%2520minimalist%2520app%2520logo%2520design%2520with%2520abstract%2520geometric%2520shapes%2520in%2520gradient%2520blue%2520and%2520purple%2520colors%252C%2520professional%2520clean%2520look%252C%2520isolated%2520on%2520transparent%2520background%252C%2520centered%2520composition%252C%2520high%2520quality%2520vector%2520style%252C%2520simple%2520and%2520elegant&width=150&height=150&seq=logo123&orientation=squarish',
                     height: 80,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 80),
+                    errorBuilder:
+                        (context, error, stackTrace) =>
+                            const Icon(Icons.error, size: 80),
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   Text(
                     localizations.getString('registerTitle'),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
@@ -176,7 +184,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       errorText: _nameError,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return localizations.getString('fullNameRequired');
+                      if (value == null || value.isEmpty) {
+                        return localizations.getString('fullNameRequired');
+                      }
                       return null;
                     },
                   ),
@@ -190,8 +200,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       errorText: _emailError,
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) return localizations.getString('emailRequired');
-                      if (!validateEmail(value)) return localizations.getString('invalidEmail');
+                      if (value == null || value.isEmpty) {
+                        return localizations.getString('emailRequired');
+                      }
+                      if (!validateEmail(value)) {
+                        return localizations.getString('invalidEmail');
+                      }
                       return null;
                     },
                   ),
@@ -204,17 +218,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _showPassword ? Icons.visibility : Icons.visibility_off,
+                          _showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.grey,
                         ),
-                        onPressed: () => setState(() => _showPassword = !_showPassword),
+                        onPressed:
+                            () =>
+                                setState(() => _showPassword = !_showPassword),
                       ),
                       errorText: _passwordError,
                     ),
                     obscureText: !_showPassword,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return localizations.getString('passwordRequired');
-                      if (!validatePassword(value)) return localizations.getString('passwordStrength');
+                      if (value == null || value.isEmpty) {
+                        return localizations.getString('passwordRequired');
+                      }
+                      if (!validatePassword(value)) {
+                        return localizations.getString('passwordStrength');
+                      }
                       return null;
                     },
                   ),
@@ -227,25 +249,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                          _showConfirmPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.grey,
                         ),
-                        onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+                        onPressed:
+                            () => setState(
+                              () =>
+                                  _showConfirmPassword = !_showConfirmPassword,
+                            ),
                       ),
                       errorText: _confirmPasswordError,
                     ),
                     obscureText: !_showConfirmPassword,
                     validator: (value) {
-                      if (value == null || value.isEmpty) return localizations.getString('confirmPasswordRequired');
-                      if (!validatePasswordMatch()) return localizations.getString('passwordsNotMatch');
+                      if (value == null || value.isEmpty) {
+                        return localizations.getString(
+                          'confirmPasswordRequired',
+                        );
+                      }
+                      if (!validatePasswordMatch()) {
+                        return localizations.getString('passwordsNotMatch');
+                      }
                       return null;
                     },
                   ),
-                  if (_nameError != null || _emailError != null || _passwordError != null || _confirmPasswordError != null)
+                  if (_nameError != null ||
+                      _emailError != null ||
+                      _passwordError != null ||
+                      _confirmPasswordError != null)
                     Padding(
-                      padding: EdgeInsets.only(top: AppSizes.spacingSmall(context)),
+                      padding: EdgeInsets.only(
+                        top: AppSizes.spacingSmall(context),
+                      ),
                       child: Text(
-                        _nameError ?? _emailError ?? _passwordError ?? _confirmPasswordError!,
+                        _nameError ??
+                            _emailError ??
+                            _passwordError ??
+                            _confirmPasswordError!,
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -255,24 +297,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return authProvider.isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                              onPressed: _register,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                minimumSize: Size(AppSizes.buttonWidth(context), AppSizes.buttonHeight(context)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            onPressed: _register,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              minimumSize: Size(
+                                AppSizes.buttonWidth(context),
+                                AppSizes.buttonHeight(context),
                               ),
-                              child: Text(localizations.getString('registerButton')),
-                            );
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              localizations.getString('registerButton'),
+                            ),
+                          );
                     },
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-                      );
+                      context.go(RoutePaths.login);
                     },
                     child: Text.rich(
                       TextSpan(
@@ -281,7 +327,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         children: [
                           TextSpan(
                             text: ' ${localizations.getString('loginLink')}',
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -292,7 +341,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Expanded(child: Divider(color: Colors.grey)),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSizes.spacingMedium(context)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacingMedium(context),
+                        ),
                         child: Text(
                           localizations.getString('orContinueWith'),
                           style: TextStyle(color: Colors.grey),

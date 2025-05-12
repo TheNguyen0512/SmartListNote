@@ -1,13 +1,13 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
-import 'package:smartlist/features/auth/presentation/screens/register_screen.dart';
 import 'package:smartlist/features/notes/domain/providers/note_provider.dart';
-import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
 import 'package:smartlist/localization/app_localizations.dart';
+import 'package:smartlist/routing/route_paths.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,12 +64,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (authProvider.isAuthenticated) {
-          await noteProvider.loadNotes(); // Load notes after login
+          await noteProvider.loadNotes();
           if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const NoteListScreen()),
-          );
+          context.go(RoutePaths.noteList); // Thay pushReplacement
         }
       } catch (e) {
         if (!mounted) return;
@@ -108,10 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (authProvider.isAuthenticated) {
         await noteProvider.loadNotes(); // Load notes after Google sign-in
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const NoteListScreen()),
-        );
+        context.go(RoutePaths.noteList);
       }
     } catch (e) {
       if (!mounted) return;
@@ -131,7 +125,10 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingMedium, vertical: AppSizes.paddingLarge),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSizes.paddingMedium,
+              vertical: AppSizes.paddingLarge,
+            ),
             child: Form(
               key: _formKey,
               child: Column(
@@ -142,12 +139,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   Image.network(
                     'https://readdy.ai/api/search-image?query=Modern%20minimalist%20app%20logo%20design%20with%20abstract%20geometric%20shapes%20in%20gradient%20blue%20and%20purple%20colors%2C%20professional%20clean%20look%2C%20isolated%20on%20transparent%20background%2C%20centered%20composition%2C%20high%20quality%20vector%20style%2C%20simple%20and%20elegant&width=150&height=150&seq=logo123&orientation=squarish',
                     height: 80,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, size: 80),
+                    errorBuilder:
+                        (context, error, stackTrace) =>
+                            const Icon(Icons.error, size: 80),
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   Text(
                     localizations.getString('welcomeBack'),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
@@ -157,9 +158,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: localizations.getString('emailHint'),
                       border: const OutlineInputBorder(),
                       prefixIcon: const Icon(Icons.email, color: Colors.grey),
-                      errorText: _errorMessage != null && _errorMessage!.contains('invalidEmail')
-                          ? localizations.getString('invalidEmail')
-                          : null,
+                      errorText:
+                          _errorMessage != null &&
+                                  _errorMessage!.contains('invalidEmail')
+                              ? localizations.getString('invalidEmail')
+                              : null,
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -180,14 +183,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _showPassword ? Icons.visibility : Icons.visibility_off,
+                          _showPassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                           color: Colors.grey,
                         ),
-                        onPressed: () => setState(() => _showPassword = !_showPassword),
+                        onPressed:
+                            () =>
+                                setState(() => _showPassword = !_showPassword),
                       ),
-                      errorText: _errorMessage != null && _errorMessage!.contains('wrongCredentials')
-                          ? localizations.getString('wrongCredentials')
-                          : null,
+                      errorText:
+                          _errorMessage != null &&
+                                  _errorMessage!.contains('wrongCredentials')
+                              ? localizations.getString('wrongCredentials')
+                              : null,
                     ),
                     obscureText: !_showPassword,
                     validator: (value) {
@@ -198,9 +207,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   if (_errorMessage != null &&
-                      !(_errorMessage!.contains('invalidEmail') || _errorMessage!.contains('wrongCredentials')))
+                      !(_errorMessage!.contains('invalidEmail') ||
+                          _errorMessage!.contains('wrongCredentials')))
                     Padding(
-                      padding: EdgeInsets.only(top: AppSizes.spacingSmall(context)),
+                      padding: EdgeInsets.only(
+                        top: AppSizes.spacingSmall(context),
+                      ),
                       child: Text(
                         _errorMessage!,
                         style: const TextStyle(color: Colors.red),
@@ -210,13 +222,76 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // Add forgot password logic here
+                      onPressed: () async {
+                        final emailController =
+                            TextEditingController(); // Assuming you have an email field
+                        final shouldReset = await showDialog<bool>(
+                          context: context,
+                          builder:
+                              (context) => AlertDialog(
+                                title: Text(
+                                  localizations.getString('resetPassword'),
+                                ),
+                                content: TextField(
+                                  controller: emailController,
+                                  decoration: InputDecoration(
+                                    labelText: localizations.getString('emailHint'),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, false),
+                                    child: Text(
+                                      localizations.getString('cancel'),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed:
+                                        () => Navigator.pop(context, true),
+                                    child: Text(
+                                      localizations.getString('send'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                        );
+
+                        if (shouldReset == true) {
+                          try {
+                            final authProvider = Provider.of<AuthProvider>(
+                              context,
+                              listen: false,
+                            );
+                            await authProvider.sendPasswordResetEmail(
+                              emailController.text,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  localizations.getString('resetPasswordSent'),
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            final authProvider = Provider.of<AuthProvider>(
+                              context,
+                              listen: false,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  localizations.getString(
+                                    authProvider.errorMessage ??
+                                        'resetPasswordFailed',
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
                       },
-                      child: Text(
-                        localizations.getString('forgotPassword'),
-                        style: TextStyle(color: AppColors.primary),
-                      ),
+                      child: Text(localizations.getString('forgotPassword')),
                     ),
                   ),
                   SizedBox(height: AppSizes.spacingMedium(context)),
@@ -225,24 +300,26 @@ class _LoginScreenState extends State<LoginScreen> {
                       return authProvider.isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                              onPressed: _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                minimumSize: Size(AppSizes.buttonWidth(context), AppSizes.buttonHeight(context)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            onPressed: _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              minimumSize: Size(
+                                AppSizes.buttonWidth(context),
+                                AppSizes.buttonHeight(context),
                               ),
-                              child: Text(localizations.getString('loginButton')),
-                            );
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(localizations.getString('loginButton')),
+                          );
                     },
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const RegisterScreen()),
-                      );
+                      context.go(RoutePaths.register);
                     },
                     child: Text.rich(
                       TextSpan(
@@ -251,7 +328,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           TextSpan(
                             text: ' ${localizations.getString('registerLink')}',
-                            style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
@@ -262,8 +342,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       const Expanded(child: Divider(color: Colors.grey)),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSizes.spacingMedium(context)),
-                        child: Text(localizations.getString('orContinueWith'), style: const TextStyle(color: Colors.grey)),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSizes.spacingMedium(context),
+                        ),
+                        child: Text(
+                          localizations.getString('orContinueWith'),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                       ),
                       const Expanded(child: Divider(color: Colors.grey)),
                     ],

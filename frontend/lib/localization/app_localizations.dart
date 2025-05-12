@@ -14,7 +14,7 @@ class AppLocalizations {
     return AppStrings.get(key, locale);
   }
 
-   String get appTitle => getString('appTitle');
+  String get appTitle => getString('appTitle');
   String get taskListTitle => getString('taskListTitle');
   String get addTask => getString('addTask');
   String get editTask => getString('editTask');
@@ -123,11 +123,11 @@ class AppLocalizations {
   String get notificationSound => getString('notificationSound');
   String get vibration => getString('vibration');
   String get appearance => getString('appearance');
-  String get theme => getString('theme');  
+  String get theme => getString('theme');
   String get textSize => getString('textSize');
-  String get accountSettings => getString('accountSettings');  
-  String get changePassword => getString('changePassword');  
-  String get syncWithCloud => getString('syncWithCloud');  
+  String get accountSettings => getString('accountSettings');
+  String get changePassword => getString('changePassword');
+  String get syncWithCloud => getString('syncWithCloud');
   String get exportData => getString('exportData');
   String get aboutHelp => getString('aboutHelp');
   String get helpCenter => getString('helpCenter');
@@ -135,6 +135,15 @@ class AppLocalizations {
   String get termsOfService => getString('termsOfService');
   String get version => getString('version');
   String get errorSavingTask => getString('errorSavingTask');
+  String get currentPassword => getString('currentPassword');
+  String get newPassword => getString('newPassword');
+  String get passwordChanged => getString('passwordChanged');
+  String get changePasswordFailed => getString('changePasswordFailed');
+  String get requiresRecentLogin => getString('requiresRecentLogin');
+  String get resetPassword => getString('resetPassword');
+  String get resetPasswordSent => getString('resetPasswordSent');
+  String get resetPasswordFailed => getString('resetPasswordFailed');
+  String get userNotFound => getString('userNotFound');
 
   String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';

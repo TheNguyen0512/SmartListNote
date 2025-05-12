@@ -10,5 +10,7 @@ namespace SmartList.API.Application.Interface
         Task<(User, string)> SignInWithGoogleAsync(string idToken, string accessToken);
         Task LogoutAsync(string userId);
         Task<User> GetUserAsync(string userId);
+        Task ChangePasswordAsync(string userId, string currentPassword, string newPassword);
+        Task SendPasswordResetEmailAsync(string email);
     }
-}   
+}

@@ -1,4 +1,7 @@
+// frontend/lib/features/notes/presentation/screens/add_note_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
@@ -6,6 +9,7 @@ import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/features/notes/domain/entities/note.dart';
 import 'package:smartlist/features/notes/domain/providers/note_provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:smartlist/routing/route_paths.dart';
 
 class AddNoteScreen extends StatefulWidget {
   final Note? noteToEdit;
@@ -115,7 +119,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
               isOnline ? (noteProvider.syncStatus ?? 'noteAdded') : 'savedOffline',
             ));
             if (context.mounted) {
-              Navigator.pop(context);
+              context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
             }
           }
         } else {
@@ -128,18 +132,17 @@ class AddNoteScreenState extends State<AddNoteScreen> {
               isOnline ? (noteProvider.syncStatus ?? 'noteUpdated') : 'savedOffline',
             ));
             if (context.mounted) {
-              Navigator.pop(context);
+              context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
             }
           }
         }
       } catch (e) {
-        // Log the error for debugging
         debugPrint('Error saving note: $e');
         widget.onShowSnackBar(localizations.getString(
           isOnline ? 'failedToAddNote' : 'savedOffline',
         ));
         if (!isOnline && context.mounted) {
-          Navigator.pop(context); // Still navigate back if offline
+          context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
         }
       }
     }
@@ -201,7 +204,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
             onPressed: () async {
               final shouldPop = await _onBackPressed();
               if (shouldPop && context.mounted) {
-                Navigator.pop(context);
+                context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
               }
             },
             color: Colors.grey,

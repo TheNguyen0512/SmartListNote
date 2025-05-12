@@ -1,12 +1,14 @@
+// frontend/lib/features/notes/presentation/screens/settings_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/localization/locale_provider.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
-import 'package:smartlist/features/auth/presentation/screens/login_screen.dart';
-import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
+import 'package:smartlist/routing/route_paths.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -38,7 +40,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     if (index == 1) {
-      // Calendar tab - launch external link
       const url =
           'https://readdy.ai/home/93f9ccd5-e659-4e91-b6da-4f1c6c2c387c/234832b4-c196-4fdd-96f9-2cc5f32fdd0d';
       if (await canLaunchUrl(Uri.parse(url))) {
@@ -52,11 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedIndex = 2; // Return to Setting tab
       });
     } else if (index == 0) {
-      // Notes tab
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const NoteListScreen()),
-      );
+      context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.push
       setState(() {
         _selectedIndex = 2; // Return to Setting tab after notes
       });
@@ -134,6 +131,217 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: EdgeInsets.all(AppSizes.paddingMedium),
         child: Column(
           children: [
+            // Account Settings
+            Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey, width: 0.5),
+                      ),
+                    ),
+                    child: Text(
+                      localizations.getString('accountSettings'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.normal,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      ListTile(
+                        leading: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        title: Text(
+                          authProvider.user?.displayName ?? 'Unknown User',
+                          style: const TextStyle(fontWeight: FontWeight.normal),
+                        ),
+                        subtitle: Text(
+                          authProvider.user?.email ?? 'No email',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () {},
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          localizations.getString('language'),
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DropdownButton<String>(
+                              value: localeProvider.locale.languageCode,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'en',
+                                  child: Text(
+                                    localizations.getString('english'),
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'vi',
+                                  child: Text(
+                                    localizations.getString('vietnamese'),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value != null) {
+                                  localeProvider.setLocale(
+                                    Locale(value, value == 'en' ? 'US' : 'VN'),
+                                  );
+                                }
+                              },
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: Colors.blue),
+                              underline: const SizedBox.shrink(),
+                              dropdownColor: Theme.of(context).cardColor,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ),
+                      ),
+                      // Example snippet for SettingsScreen
+                      ListTile(
+                        title: Text(
+                          localizations.getString('changePassword'),
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey,
+                        ),
+                        onTap: () async {
+                          final currentPasswordController =
+                              TextEditingController();
+                          final newPasswordController = TextEditingController();
+
+                          final shouldChange = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: Text(
+                                    localizations.getString('changePassword'),
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: currentPasswordController,
+                                        decoration: InputDecoration(
+                                          labelText: localizations.getString(
+                                            'currentPassword',
+                                          ),
+                                        ),
+                                        obscureText: true,
+                                      ),
+                                      TextField(
+                                        controller: newPasswordController,
+                                        decoration: InputDecoration(
+                                          labelText: localizations.getString(
+                                            'newPassword',
+                                          ),
+                                        ),
+                                        obscureText: true,
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, false),
+                                      child: Text(
+                                        localizations.getString('cancel'),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, true),
+                                      child: Text(
+                                        localizations.getString('change'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                          );
+
+                          if (shouldChange == true) {
+                            try {
+                              final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              );
+                              await authProvider.changePassword(
+                                currentPasswordController.text,
+                                newPasswordController.text,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    localizations.getString('passwordChanged'),
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    localizations.getString(
+                                      authProvider.errorMessage ??
+                                          'changePasswordFailed',
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                      ListTile(
+                        title: Text(
+                          localizations.getString('exportData'),
+                          style: const TextStyle(color: Colors.black),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey,
+                        ),
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
             // Calendar Preferences
             Card(
               shape: RoundedRectangleBorder(
@@ -747,136 +955,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            // Account Settings
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('accountSettings'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        title: const Text(
-                          'Emily Johnson',
-                          style: TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                        subtitle: const Text(
-                          'emily.johnson@example.com',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () {},
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('language'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            DropdownButton<String>(
-                              value: localeProvider.locale.languageCode,
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'en',
-                                  child: Text(
-                                    localizations.getString('english'),
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'vi',
-                                  child: Text(
-                                    localizations.getString('vietnamese'),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  localeProvider.setLocale(
-                                    Locale(value, value == 'en' ? 'US' : 'VN'),
-                                  );
-                                }
-                              },
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.blue),
-                              underline: const SizedBox.shrink(),
-                              dropdownColor: Theme.of(context).cardColor,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('changePassword'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {},
-                      ),
-                      SwitchListTile(
-                        title: Text(
-                          localizations.getString('syncWithCloud'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        value: true,
-                        onChanged: (value) {},
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('exportData'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
             // About & Help
             Card(
               shape: RoundedRectangleBorder(
@@ -1013,11 +1091,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       );
                     } finally {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        (route) => false,
-                      );
+                      context.go(
+                        RoutePaths.login,
+                      ); // Sử dụng GoRouter thay pushAndRemoveUntil
                     }
                   }
                 },

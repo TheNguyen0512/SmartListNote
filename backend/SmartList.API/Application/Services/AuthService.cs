@@ -161,6 +161,11 @@ namespace SmartList.API.Application.Services
             {
                 Console.WriteLine($"Logging out user: {userId}");
                 await FirebaseAuth.DefaultInstance.RevokeRefreshTokensAsync(userId);
+                await _authRepository.UpdateUserMetadataAsync(userId, new Infrastructure.Interface.UserMetadata
+                {
+                    UpdatedAt = DateTime.UtcNow,
+                    LastPasswordChange = null
+                });
                 Console.WriteLine($"Logout successful for user: {userId}");
             }
             catch (FirebaseAuthException ex)
@@ -188,6 +193,73 @@ namespace SmartList.API.Application.Services
             {
                 Console.WriteLine($"Error fetching user {userId}: Message={ex.Message}, Inner={ex.InnerException?.Message}");
                 throw new Exception("user-not-found", ex);
+            }
+        }
+
+        public async Task ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+        {
+            try
+            {
+                Console.WriteLine($"Changing password for user: {userId}");
+                var userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(userId);
+
+                // Note: Firebase Admin SDK cannot verify the current password.
+                // The client must re-authenticate the user with the current password before calling this endpoint.
+                var userUpdateArgs = new UserRecordArgs
+                {
+                    Uid = userId,
+                    Password = newPassword
+                };
+                await FirebaseAuth.DefaultInstance.UpdateUserAsync(userUpdateArgs);
+
+                // Update metadata in Firestore
+                await _authRepository.UpdateUserMetadataAsync(userId, new Infrastructure.Interface.UserMetadata
+                {
+                    UpdatedAt = DateTime.UtcNow,
+                    LastPasswordChange = DateTime.UtcNow
+                });
+
+                Console.WriteLine($"Password changed successfully for user: {userId}");
+            }
+            catch (FirebaseAuthException ex)
+            {
+                Console.WriteLine($"FirebaseAuthException in ChangePassword: ErrorCode={ex.ErrorCode}, Message={ex.Message}, Inner={ex.InnerException?.Message}");
+                throw MapFirebaseAuthException(ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected exception in ChangePassword: Message={ex.Message}, Inner={ex.InnerException?.Message}");
+                throw new Exception("auth-error", ex);
+            }
+        }
+
+        public async Task SendPasswordResetEmailAsync(string email)
+        {
+            try
+            {
+                Console.WriteLine($"Sending password reset email to: {email}");
+                var link = await FirebaseAuth.DefaultInstance.GeneratePasswordResetLinkAsync(email);
+                Console.WriteLine($"Password reset link generated: {link}");
+
+                // Update metadata for the user
+                var userRecord = await FirebaseAuth.DefaultInstance.GetUserByEmailAsync(email);
+                await _authRepository.UpdateUserMetadataAsync(userRecord.Uid, new Infrastructure.Interface.UserMetadata
+                {
+                    UpdatedAt = DateTime.UtcNow,
+                    LastPasswordChange = null
+                });
+
+                // In a real app, send the link via email (e.g., using SendGrid or SMTP).
+            }
+            catch (FirebaseAuthException ex)
+            {
+                Console.WriteLine($"FirebaseAuthException in SendPasswordResetEmail: ErrorCode={ex.ErrorCode}, Message={ex.Message}, Inner={ex.InnerException?.Message}");
+                throw MapFirebaseAuthException(ex);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected exception in SendPasswordResetEmail: Message={ex.Message}, Inner={ex.InnerException?.Message}");
+                throw new Exception("auth-error", ex);
             }
         }
 

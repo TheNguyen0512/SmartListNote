@@ -3,6 +3,7 @@ using SmartList.API.Domain.Entities;
 using SmartList.API.Infrastructure.Interface;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace SmartList.API.Infrastructure.Firebase
 {
@@ -53,11 +54,39 @@ namespace SmartList.API.Infrastructure.Firebase
             {
                 email = user.Email,
                 createdAt = user.CreatedAt.ToString("o"),
-                updatedAt = user.UpdatedAt.ToString("o"),
+                updatedAt = DateTime.UtcNow.ToString("o"), // Always update the timestamp
                 displayName = user.DisplayName,
                 photoUrl = user.PhotoUrl
             };
             await docRef.SetAsync(data, SetOptions.MergeAll);
+        }
+
+        public async Task UpdateUserMetadataAsync(string userId, UserMetadata metadata)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+            }
+
+            if (metadata == null)
+            {
+                throw new ArgumentNullException(nameof(metadata));
+            }
+
+            var docRef = _firestoreDb.Collection("users").Document(userId);
+            var snapshot = await docRef.GetSnapshotAsync();
+            if (!snapshot.Exists)
+            {
+                throw new Exception($"User not found for ID: {userId}");
+            }
+
+            // Convert the metadata to a Dictionary<string, object>
+            var data = new Dictionary<string, object>
+            {
+                ["updatedAt"] = metadata.UpdatedAt.ToString("o"),
+                ["lastPasswordChange"] = metadata.LastPasswordChange?.ToString("o") ?? FieldValue.Delete // Handle null case
+            };
+            await docRef.UpdateAsync(data);
         }
     }
 }
