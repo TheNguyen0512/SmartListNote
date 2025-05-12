@@ -9,7 +9,10 @@ import 'package:smartlist/features/notes/domain/entities/note.dart';
 import 'package:smartlist/features/notes/domain/providers/note_provider.dart';
 import 'package:smartlist/features/notes/presentation/screens/add_note_screen.dart';
 import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
-import 'package:smartlist/features/notes/presentation/screens/settings_screen.dart';
+import 'package:smartlist/features/setting/presentation/screens/help_center_screen.dart';
+import 'package:smartlist/features/setting/presentation/screens/privacy_policy_screen.dart';
+import 'package:smartlist/features/setting/presentation/screens/settings_screen.dart';
+import 'package:smartlist/features/setting/presentation/screens/terms_of_service_screen.dart';
 import 'package:smartlist/routing/navigation_observer.dart';
 import 'package:smartlist/routing/route_paths.dart';
 
@@ -120,6 +123,20 @@ class AppRouter {
       GoRoute(
         path: RoutePaths.settings,
         builder: (context, state) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'help-center',
+            builder: (context, state) => const HelpCenterScreen(),
+          ),
+          GoRoute(
+            path: 'privacy-policy',
+            builder: (context, state) => const PrivacyPolicyScreen(),
+          ),
+          GoRoute(
+            path: 'terms-of-service',
+            builder: (context, state) => const TermsOfServiceScreen(),
+          ),
+        ],
       ),
     ],
   );

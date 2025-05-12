@@ -136,13 +136,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(height: AppSizes.spacingLarge(context)),
-                  Image.network(
-                    'https://readdy.ai/api/search-image?query=Modern%20minimalist%20app%20logo%20design%20with%20abstract%20geometric%20shapes%20in%20gradient%20blue%20and%20purple%20colors%2C%20professional%20clean%20look%2C%20isolated%20on%20transparent%20background%2C%20centered%20composition%2C%20high%20quality%20vector%20style%2C%20simple%20and%20elegant&width=150&height=150&seq=logo123&orientation=squarish',
+                  Image.asset(
+                    'lib/assets/icon/app_icon.png',
                     height: 80,
                     errorBuilder:
                         (context, error, stackTrace) =>
                             const Icon(Icons.error, size: 80),
                   ),
+
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   Text(
                     localizations.getString('welcomeBack'),
@@ -235,7 +236,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 content: TextField(
                                   controller: emailController,
                                   decoration: InputDecoration(
-                                    labelText: localizations.getString('emailHint'),
+                                    labelText: localizations.getString(
+                                      'emailHint',
+                                    ),
                                   ),
                                 ),
                                 actions: [
