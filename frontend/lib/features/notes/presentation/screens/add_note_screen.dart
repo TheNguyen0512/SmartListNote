@@ -5,11 +5,11 @@ import 'package:smartlist/core/constants/sizes.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/features/notes/domain/entities/note.dart';
 import 'package:smartlist/features/notes/domain/providers/note_provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class AddNoteScreen extends StatefulWidget {
   final Note? noteToEdit;
-  final Function(String message, {String? actionLabel, VoidCallback? onAction})
-  onShowSnackBar;
+  final Function(String message, {String? actionLabel, VoidCallback? onAction}) onShowSnackBar;
 
   const AddNoteScreen({
     super.key,
@@ -27,25 +27,46 @@ class AddNoteScreenState extends State<AddNoteScreen> {
   late TextEditingController _descriptionController;
   DateTime? _dueDate;
   Priority _priority = Priority.medium;
+  bool _hasChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(
-      text: widget.noteToEdit?.title ?? '',
-    );
-    _descriptionController = TextEditingController(
-      text: widget.noteToEdit?.description ?? '',
-    );
+    _titleController = TextEditingController(text: widget.noteToEdit?.title ?? '');
+    _descriptionController = TextEditingController(text: widget.noteToEdit?.description ?? '');
     _dueDate = widget.noteToEdit?.dueDate;
     _priority = widget.noteToEdit?.priority ?? Priority.medium;
+
+    _titleController.addListener(_checkForChanges);
+    _descriptionController.addListener(_checkForChanges);
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(_checkForChanges);
+    _descriptionController.removeListener(_checkForChanges);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _checkForChanges() {
+    final initialNote = widget.noteToEdit;
+    if (initialNote == null) {
+      setState(() {
+        _hasChanges = _titleController.text.isNotEmpty ||
+            _descriptionController.text.isNotEmpty ||
+            _dueDate != null ||
+            _priority != Priority.medium;
+      });
+    } else {
+      setState(() {
+        _hasChanges = _titleController.text != initialNote.title ||
+            _descriptionController.text != (initialNote.description ?? '') ||
+            _dueDate != initialNote.dueDate ||
+            _priority != initialNote.priority;
+      });
+    }
   }
 
   Future<void> _selectDueDate(BuildContext context) async {
@@ -58,14 +79,21 @@ class AddNoteScreenState extends State<AddNoteScreen> {
     if (picked != null && picked != _dueDate) {
       setState(() {
         _dueDate = picked;
+        _checkForChanges();
       });
     }
   }
 
-  void _saveNote() async {
+  Future<bool> _isOnline() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    return connectivityResult != ConnectivityResult.none;
+  }
+
+  Future<void> _saveNote() async {
     if (_formKey.currentState!.validate()) {
       final noteProvider = Provider.of<NoteProvider>(context, listen: false);
       final localizations = AppLocalizations.of(context)!;
+      final isOnline = await _isOnline();
 
       final newNote = Note(
         id: widget.noteToEdit?.id,
@@ -80,166 +108,207 @@ class AddNoteScreenState extends State<AddNoteScreen> {
         if (widget.noteToEdit == null) {
           // Add new note
           await noteProvider.addNote(newNote);
-          widget.onShowSnackBar(localizations.getString('taskAdded'));
+          if (noteProvider.errorMessage != null) {
+            widget.onShowSnackBar(localizations.getString(noteProvider.errorMessage!));
+          } else {
+            widget.onShowSnackBar(localizations.getString(
+              isOnline ? (noteProvider.syncStatus ?? 'noteAdded') : 'savedOffline',
+            ));
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          }
         } else {
           // Update existing note
           await noteProvider.updateNote(newNote);
-          widget.onShowSnackBar(localizations.getString('taskUpdated'));
+          if (noteProvider.errorMessage != null) {
+            widget.onShowSnackBar(localizations.getString(noteProvider.errorMessage!));
+          } else {
+            widget.onShowSnackBar(localizations.getString(
+              isOnline ? (noteProvider.syncStatus ?? 'noteUpdated') : 'savedOffline',
+            ));
+            if (context.mounted) {
+              Navigator.pop(context);
+            }
+          }
         }
-        Navigator.pop(context);
       } catch (e) {
-        widget.onShowSnackBar(localizations.getString('errorSavingTask'));
+        // Log the error for debugging
+        debugPrint('Error saving note: $e');
+        widget.onShowSnackBar(localizations.getString(
+          isOnline ? 'failedToAddNote' : 'savedOffline',
+        ));
+        if (!isOnline && context.mounted) {
+          Navigator.pop(context); // Still navigate back if offline
+        }
       }
     }
+  }
+
+  Future<bool> _onBackPressed() async {
+    final localizations = AppLocalizations.of(context)!;
+    if (!_hasChanges) {
+      return true;
+    }
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(localizations.getString('confirmExit')),
+        content: Text(localizations.getString('unsavedChanges')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: Text(localizations.getString('cancel')),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: Text(
+              localizations.getString('discard'),
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: Text(localizations.getString('save')),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'save') {
+      await _saveNote();
+      return false; // Let _saveNote handle navigation
+    }
+    return result == 'discard';
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.noteToEdit == null
-              ? localizations.getString('addTask')
-              : localizations.getString('editTask'),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-          color: Colors.grey,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _saveNote,
-            color: AppColors.primary,
-            tooltip: localizations.getString('save'),
+    return WillPopScope(
+      onWillPop: _onBackPressed,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.noteToEdit == null
+                ? localizations.getString('addTask')
+                : localizations.getString('editTask'),
           ),
-        ],
-        elevation: 2,
-      ),
-      body: Padding(
-        padding: EdgeInsets.all(AppSizes.paddingMedium),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                TextFormField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: localizations.getString('taskTitleHint'),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.primary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    hintText: localizations.getString('taskTitleHint'),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return localizations.getString('titleRequired');
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: AppSizes.spacingMedium(context)),
-                // Priority
-                DropdownButtonFormField<Priority>(
-                  value: _priority,
-                  decoration: InputDecoration(
-                    labelText: localizations.getString('priority'),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.primary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                  ),
-                  items:
-                      Priority.values.map((priority) {
-                        return DropdownMenuItem<Priority>(
-                          value: priority,
-                          child: Text(
-                            localizations.getString(priority.name.capitalize()),
-                          ),
-                        );
-                      }).toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _priority = value;
-                      });
-                    }
-                  },
-                ),
-                SizedBox(height: AppSizes.spacingMedium(context)),
-                // Due Date
-                GestureDetector(
-                  onTap: () => _selectDueDate(context),
-                  child: InputDecorator(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () async {
+              final shouldPop = await _onBackPressed();
+              if (shouldPop && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            color: Colors.grey,
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.check),
+              onPressed: _saveNote,
+              color: AppColors.primary,
+              tooltip: localizations.getString('save'),
+            ),
+          ],
+          elevation: 2,
+        ),
+        body: Padding(
+          padding: EdgeInsets.all(AppSizes.paddingMedium),
+          child: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _titleController,
                     decoration: InputDecoration(
-                      labelText: localizations.getString('dueDate'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      labelText: localizations.getString('taskTitleHint'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: AppColors.primary),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      suffixIcon: const Icon(
-                        Icons.calendar_today,
-                        color: Colors.grey,
-                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      hintText: localizations.getString('taskTitleHint'),
                     ),
-                    child: Text(
-                      _dueDate != null
-                          ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
-                          : localizations.getString('selectDueDate'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return localizations.getString('titleRequired');
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: AppSizes.spacingMedium(context)),
+                  DropdownButtonFormField<Priority>(
+                    value: _priority,
+                    decoration: InputDecoration(
+                      labelText: localizations.getString('priority'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    ),
+                    items: Priority.values.map((priority) {
+                      return DropdownMenuItem<Priority>(
+                        value: priority,
+                        child: Text(localizations.getString(priority.name.capitalize())),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _priority = value;
+                          _checkForChanges();
+                        });
+                      }
+                    },
+                  ),
+                  SizedBox(height: AppSizes.spacingMedium(context)),
+                  GestureDetector(
+                    onTap: () => _selectDueDate(context),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: localizations.getString('dueDate'),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppColors.primary),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
+                      ),
+                      child: Text(
+                        _dueDate != null
+                            ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
+                            : localizations.getString('selectDueDate'),
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: AppSizes.spacingMedium(context)),
-                // Description
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: localizations.getString('taskDescriptionHint'),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  SizedBox(height: AppSizes.spacingMedium(context)),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: localizations.getString('taskDescriptionHint'),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: AppColors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      hintText: localizations.getString('taskDescriptionHint'),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppColors.primary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    hintText: localizations.getString('taskDescriptionHint'),
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
                   ),
-                  maxLines: null, // Allows unlimited line breaks
-                  keyboardType: TextInputType.multiline,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -248,7 +317,6 @@ class AddNoteScreenState extends State<AddNoteScreen> {
   }
 }
 
-// Extension to capitalize enum names for display
 extension StringExtension on String {
   String capitalize() {
     return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";

@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
-import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
 import 'package:smartlist/features/auth/presentation/screens/register_screen.dart';
+import 'package:smartlist/features/notes/domain/providers/note_provider.dart';
 import 'package:smartlist/features/notes/presentation/screens/note_list_screen.dart';
+import 'package:smartlist/localization/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,6 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final localizations = AppLocalizations.of(context)!;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final noteProvider = Provider.of<NoteProvider>(context, listen: false);
 
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
@@ -62,6 +64,8 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (authProvider.isAuthenticated) {
+          await noteProvider.loadNotes(); // Load notes after login
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const NoteListScreen()),
@@ -83,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final localizations = AppLocalizations.of(context)!;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final noteProvider = Provider.of<NoteProvider>(context, listen: false);
 
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
@@ -101,6 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (authProvider.isAuthenticated) {
+        await noteProvider.loadNotes(); // Load notes after Google sign-in
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const NoteListScreen()),
@@ -196,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: EdgeInsets.only(top: AppSizes.spacingSmall(context)),
                       child: Text(
                         _errorMessage!,
-                        style: TextStyle(color: Colors.red),
+                        style: const TextStyle(color: Colors.red),
                       ),
                     ),
                   SizedBox(height: AppSizes.spacingMedium(context)),
@@ -240,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text.rich(
                       TextSpan(
                         text: localizations.getString('noAccount'),
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                         children: [
                           TextSpan(
                             text: ' ${localizations.getString('registerLink')}',
@@ -253,12 +260,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   Row(
                     children: [
-                      Expanded(child: Divider(color: Colors.grey)),
+                      const Expanded(child: Divider(color: Colors.grey)),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: AppSizes.spacingMedium(context)),
-                        child: Text(localizations.getString('orContinueWith'), style: TextStyle(color: Colors.grey)),
+                        child: Text(localizations.getString('orContinueWith'), style: const TextStyle(color: Colors.grey)),
                       ),
-                      Expanded(child: Divider(color: Colors.grey)),
+                      const Expanded(child: Divider(color: Colors.grey)),
                     ],
                   ),
                   SizedBox(height: AppSizes.spacingMedium(context)),
@@ -266,15 +273,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.g_translate, color: Colors.red),
-                        onPressed: () {},
+                        icon: const Icon(Icons.g_translate, color: Colors.red),
+                        onPressed: _signInWithGoogle,
                       ),
                     ],
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
                   Text(
                     localizations.getString('termsAndPrivacy'),
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 ],

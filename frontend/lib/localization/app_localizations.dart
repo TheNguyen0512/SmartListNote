@@ -134,6 +134,7 @@ class AppLocalizations {
   String get privacyPolicy => getString('privacyPolicy');
   String get termsOfService => getString('termsOfService');
   String get version => getString('version');
+  String get errorSavingTask => getString('errorSavingTask');
 
   String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';

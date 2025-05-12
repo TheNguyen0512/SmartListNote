@@ -1,7 +1,7 @@
 
 # ✅ SmartList - Todo List App
 
-SmartList là một ứng dụng quản lý công việc đa nền tảng tích hợp các tính năng hiện đại như xác thực bằng Firebase, phân tích hiệu suất, cộng tác nhóm, và nhập liệu bằng giọng nói.
+SmartList là một ứng dụng quản lý công việc đa nền tảng tích hợp các tính năng hiện đại như xác thực bằng Firebase, phân tích hiệu suất, cộng tác nhóm, nhập liệu bằng giọng nói, và hỗ trợ chế độ offline.
 
 ---
 
@@ -27,6 +27,8 @@ todo_list_app/
 - **Localization** – Đa ngôn ngữ
 - **Voice Input** – Nhập liệu bằng giọng nói
 - **Custom Routing System** – Định tuyến có quản lý
+- **Hive** – Lưu trữ dữ liệu offline
+- **Connectivity Plus** – Theo dõi trạng thái kết nối mạng
 
 ### 🧩 Tính năng chính:
 - Đăng nhập / Đăng ký (Email & Google)
@@ -35,6 +37,8 @@ todo_list_app/
 - Biểu đồ hiệu suất công việc
 - Giao việc theo nhóm (collaboration)
 - Giao diện đẹp, dễ sử dụng, hỗ trợ đa ngôn ngữ
+- **💾 Chế độ offline:** công việc được lưu cục bộ (bằng Hive) khi mất kết nối
+- **🔁 Đồng bộ tự động:** dữ liệu sẽ được đồng bộ với server khi thiết bị kết nối lại Internet
 
 ### ▶️ Khởi chạy Flutter app:
 ```bash
@@ -64,6 +68,7 @@ flutter run
 - API thống kê công việc (analytics)
 - API cho cộng tác nhóm
 - API hỗ trợ nhập liệu bằng giọng nói
+- **📡 Xử lý đồng bộ dữ liệu:** nhận và xử lý các thay đổi từ client sau khi kết nối lại mạng
 
 ### ▶️ Khởi chạy API backend:
 ```bash
@@ -81,6 +86,7 @@ dotnet run
 - Flutter sử dụng `http` để gọi API từ ASP.NET Core
 - Token đăng nhập từ Firebase sẽ được gửi kèm `Authorization: Bearer <token>`
 - Backend sẽ xác thực token và ủy quyền thao tác tương ứng với người dùng
+- **Dữ liệu offline** sẽ được đẩy lên backend khi có lại mạng thông qua API đồng bộ
 
 ---
 
@@ -111,5 +117,4 @@ dotnet test
 - Trải nghiệm học tập xây dựng hệ thống full-stack hiện đại
 - Thực hành kiến trúc rõ ràng: Clean Architecture, Tiers
 - Triển khai các tính năng phổ biến trong ứng dụng thực tế
-
----
+- **Phát triển ứng dụng hoạt động ổn định cả khi offline**
