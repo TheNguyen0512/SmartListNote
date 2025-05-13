@@ -6,6 +6,7 @@ class RoutePaths {
   static const String noteList = '/notes';
   static const String addNote = '/notes/add';
   static const String editNote = '/notes/edit/:id';
+  static const String voiceInput = '/notes/voice-input';
   static const String settings = '/settings';
   static const String helpCenter = '/settings/help-center';
   static const String privacyPolicy = '/settings/privacy-policy';

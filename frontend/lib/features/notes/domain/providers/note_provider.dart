@@ -13,7 +13,7 @@ class NoteProvider extends ChangeNotifier {
   String? _errorMessage;
   bool _isLoading = false;
   String? _syncStatus;
-  Timer? _debounce;
+  Timer? _debounce; // Keep for subsequent calls
   Timer? _toggleDebounce;
   final HiveService _hiveService = HiveService();
 
@@ -23,7 +23,8 @@ class NoteProvider extends ChangeNotifier {
   String? get syncStatus => _syncStatus;
 
   NoteProvider() {
-    loadNotes();
+    // Load notes immediately on initialization
+    _loadNotes();
   }
 
   Future<bool> _isOnline() async {
@@ -61,6 +62,10 @@ class NoteProvider extends ChangeNotifier {
     }
 
     try {
+      _isLoading = true; // Start loading immediately
+      _errorMessage = null;
+      notifyListeners();
+
       _notes = await _hiveService.loadNotes();
       if (kDebugMode) {
         print('Loaded ${_notes.length} notes from Hive');
@@ -75,23 +80,18 @@ class NoteProvider extends ChangeNotifier {
       return;
     }
 
-    _isLoading = false;
-    notifyListeners();
-
     if (!await _isOnline()) {
       if (kDebugMode) {
         print('Offline: Using cached notes');
       }
+      _isLoading = false;
       _errorMessage = null;
+      notifyListeners();
       return;
     }
 
     for (int attempt = 1; attempt <= 3; attempt++) {
       try {
-        _isLoading = true;
-        _errorMessage = null;
-        notifyListeners();
-
         final token = await user.getIdToken(true);
         if (token == null) {
           _errorMessage = 'failedToGetToken';
@@ -110,7 +110,8 @@ class NoteProvider extends ChangeNotifier {
 
         if (response.statusCode == 200) {
           final List<dynamic> data = jsonDecode(response.body);
-          _notes = data.map((json) => Note.fromJson(json, id: json['id'])).toList();
+          _notes =
+              data.map((json) => Note.fromJson(json, id: json['id'])).toList();
           await _hiveService.saveNotes(_notes);
           await _syncOperations();
           _isLoading = false;
@@ -160,7 +161,9 @@ class NoteProvider extends ChangeNotifier {
       final operation = operations[i];
       if (operation.synced) {
         if (kDebugMode) {
-          print('Skipping already synced operation: ${operation.type}, ID: ${operation.note?.id ?? operation.id}');
+          print(
+            'Skipping already synced operation: ${operation.type}, ID: ${operation.note?.id ?? operation.id}',
+          );
         }
         indicesToDelete.add(i);
         continue;
@@ -168,7 +171,9 @@ class NoteProvider extends ChangeNotifier {
 
       try {
         if (kDebugMode) {
-          print('Syncing operation: ${operation.type}, ID: ${operation.note?.id ?? operation.id}');
+          print(
+            'Syncing operation: ${operation.type}, ID: ${operation.note?.id ?? operation.id}',
+          );
         }
         switch (operation.type) {
           case OperationType.add:
@@ -180,7 +185,9 @@ class NoteProvider extends ChangeNotifier {
               );
               if (existingNote.id != operation.note!.id) {
                 if (kDebugMode) {
-                  print('Skipping already synced note with temp ID: ${operation.note!.id}, new ID: ${existingNote.id}');
+                  print(
+                    'Skipping already synced note with temp ID: ${operation.note!.id}, new ID: ${existingNote.id}',
+                  );
                 }
                 indicesToDelete.add(i);
                 continue;
@@ -195,8 +202,13 @@ class NoteProvider extends ChangeNotifier {
                 body: jsonEncode(operation.note!.toJson()),
               );
               if (response.statusCode == 201) {
-                final newNote = Note.fromJson(jsonDecode(response.body), id: jsonDecode(response.body)['id']);
-                final index = _notes.indexWhere((n) => n.id == operation.note!.id);
+                final newNote = Note.fromJson(
+                  jsonDecode(response.body),
+                  id: jsonDecode(response.body)['id'],
+                );
+                final index = _notes.indexWhere(
+                  (n) => n.id == operation.note!.id,
+                );
                 if (index != -1) {
                   _notes[index] = newNote;
                 } else {
@@ -204,7 +216,9 @@ class NoteProvider extends ChangeNotifier {
                 }
                 indicesToDelete.add(i);
                 if (kDebugMode) {
-                  print('Successfully synced add operation, new ID: ${newNote.id}');
+                  print(
+                    'Successfully synced add operation, new ID: ${newNote.id}',
+                  );
                 }
               }
             }
@@ -212,7 +226,9 @@ class NoteProvider extends ChangeNotifier {
           case OperationType.update:
             if (operation.note != null) {
               final response = await http.put(
-                Uri.parse('http://10.0.2.2:5102/api/Note/${operation.note!.id}'),
+                Uri.parse(
+                  'http://10.0.2.2:5102/api/Note/${operation.note!.id}',
+                ),
                 headers: {
                   'Authorization': 'Bearer $token',
                   'Content-Type': 'application/json',
@@ -220,13 +236,19 @@ class NoteProvider extends ChangeNotifier {
                 body: jsonEncode(operation.note!.toJson()),
               );
               if (response.statusCode == 200) {
-                final index = _notes.indexWhere((n) => n.id == operation.note!.id);
+                final index = _notes.indexWhere(
+                  (n) => n.id == operation.note!.id,
+                );
                 if (index != -1) {
-                  _notes[index] = operation.note!.copyWith(updatedAt: DateTime.now());
+                  _notes[index] = operation.note!.copyWith(
+                    updatedAt: DateTime.now(),
+                  );
                 }
                 indicesToDelete.add(i);
                 if (kDebugMode) {
-                  print('Successfully synced update operation for ID: ${operation.note!.id}');
+                  print(
+                    'Successfully synced update operation for ID: ${operation.note!.id}',
+                  );
                 }
               }
             }
@@ -244,7 +266,9 @@ class NoteProvider extends ChangeNotifier {
                 _notes.removeWhere((note) => note.id == operation.id);
                 indicesToDelete.add(i);
                 if (kDebugMode) {
-                  print('Successfully synced delete operation for ID: ${operation.id}');
+                  print(
+                    'Successfully synced delete operation for ID: ${operation.id}',
+                  );
                 }
               }
             }
@@ -263,7 +287,9 @@ class NoteProvider extends ChangeNotifier {
         final success = await _hiveService.deleteOperation(index);
         if (!success) {
           if (kDebugMode) {
-            print('Failed to delete operation at index $index, marking for retry');
+            print(
+              'Failed to delete operation at index $index, marking for retry',
+            );
           }
         }
       }
@@ -305,12 +331,14 @@ class NoteProvider extends ChangeNotifier {
       notifyListeners();
 
       if (!await _isOnline()) {
-        await _hiveService.addOperation(Operation(
-          type: OperationType.add,
-          note: newNote,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.add,
+            note: newNote,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
         _syncStatus = 'savedOffline';
         _errorMessage = null;
         _isLoading = false;
@@ -342,7 +370,10 @@ class NoteProvider extends ChangeNotifier {
       );
 
       if (response.statusCode == 201) {
-        final serverNote = Note.fromJson(jsonDecode(response.body), id: jsonDecode(response.body)['id']);
+        final serverNote = Note.fromJson(
+          jsonDecode(response.body),
+          id: jsonDecode(response.body)['id'],
+        );
         final index = _notes.indexWhere((n) => n.id == tempId);
         if (index != -1) {
           _notes[index] = serverNote;
@@ -354,23 +385,27 @@ class NoteProvider extends ChangeNotifier {
         _errorMessage = 'failedToAddNote';
         _notes.removeWhere((n) => n.id == tempId);
         await _hiveService.saveNotes(_notes);
-        await _hiveService.addOperation(Operation(
-          type: OperationType.add,
-          note: newNote,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.add,
+            note: newNote,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error adding note: $e');
       }
-      await _hiveService.addOperation(Operation(
-        type: OperationType.add,
-        note: newNote,
-        timestamp: DateTime.now(),
-        synced: false,
-      ));
+      await _hiveService.addOperation(
+        Operation(
+          type: OperationType.add,
+          note: newNote,
+          timestamp: DateTime.now(),
+          synced: false,
+        ),
+      );
       _syncStatus = 'savedOffline';
       _errorMessage = null;
       _isLoading = false;
@@ -387,12 +422,14 @@ class NoteProvider extends ChangeNotifier {
         notifyListeners();
 
         if (!await _isOnline()) {
-          await _hiveService.addOperation(Operation(
-            type: OperationType.update,
-            note: note,
-            timestamp: DateTime.now(),
-            synced: false,
-          ));
+          await _hiveService.addOperation(
+            Operation(
+              type: OperationType.update,
+              note: note,
+              timestamp: DateTime.now(),
+              synced: false,
+            ),
+          );
           _syncStatus = 'savedOffline';
           _errorMessage = null;
           _isLoading = false;
@@ -428,23 +465,27 @@ class NoteProvider extends ChangeNotifier {
           _syncStatus = 'noteUpdated';
         } else {
           _errorMessage = 'failedToUpdateNote';
-          await _hiveService.addOperation(Operation(
-            type: OperationType.update,
-            note: note,
-            timestamp: DateTime.now(),
-            synced: false,
-          ));
+          await _hiveService.addOperation(
+            Operation(
+              type: OperationType.update,
+              note: note,
+              timestamp: DateTime.now(),
+              synced: false,
+            ),
+          );
         }
       } catch (e) {
         if (kDebugMode) {
           print('Error updating note: $e');
         }
-        await _hiveService.addOperation(Operation(
-          type: OperationType.update,
-          note: note,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.update,
+            note: note,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
         _syncStatus = 'savedOffline';
         _errorMessage = null;
         _isLoading = false;
@@ -463,12 +504,14 @@ class NoteProvider extends ChangeNotifier {
         notifyListeners();
 
         if (!await _isOnline()) {
-          await _hiveService.addOperation(Operation(
-            type: OperationType.delete,
-            id: id,
-            timestamp: DateTime.now(),
-            synced: false,
-          ));
+          await _hiveService.addOperation(
+            Operation(
+              type: OperationType.delete,
+              id: id,
+              timestamp: DateTime.now(),
+              synced: false,
+            ),
+          );
           _syncStatus = 'savedOffline';
           _errorMessage = null;
           _isLoading = false;
@@ -505,23 +548,27 @@ class NoteProvider extends ChangeNotifier {
           _errorMessage = 'deleteFailed';
           _notes.add(note);
           await _hiveService.saveNotes(_notes);
-          await _hiveService.addOperation(Operation(
-            type: OperationType.delete,
-            id: id,
-            timestamp: DateTime.now(),
-            synced: false,
-          ));
+          await _hiveService.addOperation(
+            Operation(
+              type: OperationType.delete,
+              id: id,
+              timestamp: DateTime.now(),
+              synced: false,
+            ),
+          );
         }
       } catch (e) {
         if (kDebugMode) {
           print('Error deleting note: $e');
         }
-        await _hiveService.addOperation(Operation(
-          type: OperationType.delete,
-          id: id,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.delete,
+            id: id,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
         _syncStatus = 'savedOffline';
         _errorMessage = null;
         _isLoading = false;
@@ -544,12 +591,14 @@ class NoteProvider extends ChangeNotifier {
         notifyListeners();
 
         if (!await _isOnline()) {
-          await _hiveService.addOperation(Operation(
-            type: OperationType.update,
-            note: updatedNote,
-            timestamp: DateTime.now(),
-            synced: false,
-          ));
+          await _hiveService.addOperation(
+            Operation(
+              type: OperationType.update,
+              note: updatedNote,
+              timestamp: DateTime.now(),
+              synced: false,
+            ),
+          );
           _syncStatus = 'savedOffline';
           return;
         }
@@ -562,12 +611,14 @@ class NoteProvider extends ChangeNotifier {
         if (kDebugMode) {
           print('Error toggling note status: $e');
         }
-        await _hiveService.addOperation(Operation(
-          type: OperationType.update,
-          note: updatedNote,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.update,
+            note: updatedNote,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
         _syncStatus = 'savedOffline';
       }
     }
@@ -593,23 +644,27 @@ class NoteProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         _syncStatus = 'noteUpdated';
       } else {
-        await _hiveService.addOperation(Operation(
-          type: OperationType.update,
-          note: note,
-          timestamp: DateTime.now(),
-          synced: false,
-        ));
+        await _hiveService.addOperation(
+          Operation(
+            type: OperationType.update,
+            note: note,
+            timestamp: DateTime.now(),
+            synced: false,
+          ),
+        );
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error updating note in background: $e');
       }
-      await _hiveService.addOperation(Operation(
-        type: OperationType.update,
-        note: note,
-        timestamp: DateTime.now(),
-        synced: false,
-      ));
+      await _hiveService.addOperation(
+        Operation(
+          type: OperationType.update,
+          note: note,
+          timestamp: DateTime.now(),
+          synced: false,
+        ),
+      );
     }
   }
 

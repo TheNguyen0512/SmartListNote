@@ -28,7 +28,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -114,9 +113,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = localizations.getString('networkError');
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizations.getString('networkError'))),
+      );
       return;
     }
 
@@ -132,11 +131,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorMessage = localizations.getString(
-          authProvider.errorMessage ?? 'googleSignInFailed',
-        );
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            localizations.getString(
+              authProvider.errorMessage ?? 'googleSignInFailed',
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -224,8 +227,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: Colors.grey,
                         ),
                         onPressed:
-                            () =>
-                                setState(() => _showPassword = !_showPassword),
+                            () => setState(() => _showPassword = !_showPassword),
                       ),
                       errorText: _passwordError,
                     ),
@@ -256,9 +258,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         onPressed:
                             () => setState(
-                              () =>
-                                  _showConfirmPassword = !_showConfirmPassword,
-                            ),
+                                  () => _showConfirmPassword = !_showConfirmPassword,
+                                ),
                       ),
                       errorText: _confirmPasswordError,
                     ),
@@ -297,22 +298,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return authProvider.isLoading
                           ? const CircularProgressIndicator()
                           : ElevatedButton(
-                            onPressed: _register,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              minimumSize: Size(
-                                AppSizes.buttonWidth(context),
-                                AppSizes.buttonHeight(context),
+                              onPressed: _register,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                minimumSize: Size(
+                                  AppSizes.buttonWidth(context),
+                                  AppSizes.buttonHeight(context),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                              child: Text(
+                                localizations.getString('registerButton'),
                               ),
-                            ),
-                            child: Text(
-                              localizations.getString('registerButton'),
-                            ),
-                          );
+                            );
                     },
                   ),
                   SizedBox(height: AppSizes.spacingLarge(context)),
@@ -358,7 +359,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.g_translate, color: Colors.red),
-                        onPressed: () {},
+                        onPressed: _signInWithGoogle,
                       ),
                     ],
                   ),

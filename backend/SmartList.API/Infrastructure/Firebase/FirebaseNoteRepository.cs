@@ -3,6 +3,7 @@ using SmartList.API.Domain.Entities;
 using SmartList.API.Infrastructure.Interface;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,10 +12,12 @@ namespace SmartList.API.Infrastructure.Firebase
     public class FirebaseNoteRepository : INoteRepository
     {
         private readonly FirestoreDb _firestoreDb;
+        private readonly string _audioRootPath;
 
-        public FirebaseNoteRepository(FirestoreDb firestoreDb)
+        public FirebaseNoteRepository(FirestoreDb firestoreDb, IWebHostEnvironment env)
         {
             _firestoreDb = firestoreDb ?? throw new ArgumentNullException(nameof(firestoreDb));
+            _audioRootPath = Path.Combine(env.ContentRootPath, "wwwroot", "audio");
         }
 
         public async Task<List<Note>> GetNotesAsync(string userId)
@@ -43,7 +46,8 @@ namespace SmartList.API.Infrastructure.Firebase
                     DueDate = doc.GetValue<DateTime?>("dueDate"),
                     Priority = doc.GetValue<string>("priority") ?? "medium",
                     CreatedAt = doc.GetValue<DateTime>("createdAt"),
-                    UpdatedAt = doc.GetValue<DateTime>("updatedAt")
+                    UpdatedAt = doc.GetValue<DateTime>("updatedAt"),
+                    AudioUrl = doc.GetValue<string>("audioUrl")
                 }).ToList();
 
                 Console.WriteLine($"Found {notes.Count} notes for userId: {userId}");
@@ -69,7 +73,7 @@ namespace SmartList.API.Infrastructure.Firebase
                     throw new ArgumentException("Note title cannot be null or empty", nameof(note.Title));
                 }
 
-                Console.WriteLine($"Adding note for userId: {userId}, title: {note.Title}");
+                Console.WriteLine($"Adding note for userId: {userId}, title: {note.Title}, audioUrl: {note.AudioUrl}");
                 var collection = _firestoreDb
                     .Collection("users")
                     .Document(userId)
@@ -80,10 +84,11 @@ namespace SmartList.API.Infrastructure.Firebase
                     title = note.Title,
                     description = note.Description ?? "",
                     isCompleted = note.IsCompleted,
-                    dueDate = note.DueDate?.ToUniversalTime(), // Ensure UTC
+                    dueDate = note.DueDate?.ToUniversalTime(),
                     priority = note.Priority,
-                    createdAt = note.CreatedAt.ToUniversalTime(), // Ensure UTC
-                    updatedAt = note.UpdatedAt.ToUniversalTime() // Ensure UTC
+                    createdAt = note.CreatedAt.ToUniversalTime(),
+                    updatedAt = note.UpdatedAt.ToUniversalTime(),
+                    audioUrl = note.AudioUrl
                 };
 
                 Console.WriteLine($"Note data to be written: {System.Text.Json.JsonSerializer.Serialize(noteData)}");
@@ -102,10 +107,11 @@ namespace SmartList.API.Infrastructure.Firebase
                     Title = snapshot.GetValue<string>("title") ?? "",
                     Description = snapshot.GetValue<string>("description") ?? "",
                     IsCompleted = snapshot.GetValue<bool>("isCompleted"),
-                    DueDate = snapshot.GetValue<DateTime?>("dueDate"), // Nullable, no ToLocal()
+                    DueDate = snapshot.GetValue<DateTime?>("dueDate"),
                     Priority = snapshot.GetValue<string>("priority") ?? "medium",
-                    CreatedAt = snapshot.GetValue<DateTime?>("createdAt") ?? DateTime.MinValue, // Handle null with default
-                    UpdatedAt = snapshot.GetValue<DateTime?>("updatedAt") ?? DateTime.MinValue // Handle null with default
+                    CreatedAt = snapshot.GetValue<DateTime>("createdAt"),
+                    UpdatedAt = snapshot.GetValue<DateTime>("updatedAt"),
+                    AudioUrl = snapshot.GetValue<string>("audioUrl")
                 };
 
                 Console.WriteLine($"Added note {addedNote.Id} for userId: {userId}");
@@ -135,7 +141,7 @@ namespace SmartList.API.Infrastructure.Firebase
                     throw new ArgumentException("Note title cannot be null or empty", nameof(note.Title));
                 }
 
-                Console.WriteLine($"Updating note {note.Id} for userId: {userId}");
+                Console.WriteLine($"Updating note {note.Id} for userId: {userId}, audioUrl: {note.AudioUrl}");
                 var docRef = _firestoreDb
                     .Collection("users")
                     .Document(userId)
@@ -150,7 +156,8 @@ namespace SmartList.API.Infrastructure.Firebase
                     dueDate = note.DueDate,
                     priority = note.Priority,
                     createdAt = note.CreatedAt,
-                    updatedAt = note.UpdatedAt
+                    updatedAt = note.UpdatedAt,
+                    audioUrl = note.AudioUrl
                 }, SetOptions.Overwrite);
 
                 Console.WriteLine($"Updated note {note.Id} for userId: {userId}");
@@ -208,7 +215,8 @@ namespace SmartList.API.Infrastructure.Firebase
                     DueDate = snapshot.GetValue<DateTime?>("dueDate"),
                     Priority = snapshot.GetValue<string>("priority") ?? "medium",
                     CreatedAt = snapshot.GetValue<DateTime>("createdAt"),
-                    UpdatedAt = snapshot.GetValue<DateTime>("updatedAt")
+                    UpdatedAt = snapshot.GetValue<DateTime>("updatedAt"),
+                    AudioUrl = snapshot.GetValue<string>("audioUrl")
                 };
 
                 Console.WriteLine($"Toggled note {noteId} status for userId: {userId} to {!currentStatus}");
@@ -240,6 +248,17 @@ namespace SmartList.API.Infrastructure.Firebase
                     .Document(userId)
                     .Collection("notes")
                     .Document(noteId);
+
+                var snapshot = await docRef.GetSnapshotAsync();
+                if (snapshot.Exists && !string.IsNullOrEmpty(snapshot.GetValue<string>("audioUrl")))
+                {
+                    var filePath = Path.Combine(_audioRootPath, snapshot.GetValue<string>("audioUrl").Replace("/audio/", ""));
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                        Console.WriteLine($"Deleted audio file at {filePath}");
+                    }
+                }
 
                 await docRef.DeleteAsync();
                 Console.WriteLine($"Deleted note {noteId} for userId: {userId}");

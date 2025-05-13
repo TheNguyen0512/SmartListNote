@@ -1,12 +1,20 @@
 {
   "Version": 1,
-  "Hash": "BZaKbkwZH9k4kJr27LP7m2A3kMnrCa/HCSZLkdrkDTM=",
+  "Hash": "cD1rKUnglvE/yrIZWRxh481P2N/dv9VgtWZnL0MWBJc=",
   "Source": "SmartList.API",
   "BasePath": "_content/SmartList.API",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "SmartList.API\\wwwroot",
+      "Source": "SmartList.API",
+      "ContentRoot": "D:\\Flutter\\DuAn\\ToDoList\\smartlist\\backend\\SmartList.API\\wwwroot\\",
+      "BasePath": "_content/SmartList.API",
+      "Pattern": "**"
+    }
+  ],
   "Assets": [],
   "Endpoints": []
 }

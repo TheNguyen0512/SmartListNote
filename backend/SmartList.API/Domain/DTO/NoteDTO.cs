@@ -7,6 +7,7 @@ public class NoteRequest
     public required string Priority { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public string? audioUrl { get; set; }
 
     public void NormalizeDates()
     {

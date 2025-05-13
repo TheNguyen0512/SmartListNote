@@ -1,5 +1,3 @@
-// frontend/lib/features/notes/presentation/screens/note_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -128,8 +126,8 @@ class NoteListScreenState extends State<NoteListScreen> {
               });
             }
 
-            // Show loading only if no notes are available
-            if (provider.isLoading && provider.notes.isEmpty) {
+            // Show loading indicator during initial load
+            if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
@@ -147,9 +145,10 @@ class NoteListScreenState extends State<NoteListScreen> {
                     SizedBox(height: AppSizes.spacingMedium(context)),
                     Text(
                       localizations.getString(provider.errorMessage!),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: AppColors.error),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(color: AppColors.error),
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: AppSizes.spacingMedium(context)),
@@ -168,10 +167,7 @@ class NoteListScreenState extends State<NoteListScreen> {
             // Show notes or empty state
             return RefreshIndicator(
               onRefresh: () async {
-                final provider = Provider.of<NoteProvider>(
-                  context,
-                  listen: false,
-                );
+                final provider = Provider.of<NoteProvider>(context, listen: false);
                 final stopwatch = Stopwatch()..start();
                 await provider.loadNotes();
                 final elapsed = stopwatch.elapsed;
@@ -179,242 +175,220 @@ class NoteListScreenState extends State<NoteListScreen> {
                   await Future.delayed(const Duration(seconds: 1) - elapsed);
                 }
               },
-              child:
-                  provider.notes.isEmpty
-                      ? ListView(
-                        children: [
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.3,
-                          ),
-                          Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.note_outlined,
-                                  size: AppSizes.iconLarge(context),
-                                  color: Theme.of(context).disabledColor,
-                                ),
-                                SizedBox(
-                                  height: AppSizes.spacingMedium(context),
-                                ),
-                                Text(
-                                  localizations.getString('noTasks'),
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).disabledColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                      : Padding(
-                        padding: EdgeInsets.all(AppSizes.paddingMedium),
-                        child: ListView.separated(
-                          itemCount: provider.notes.length,
-                          separatorBuilder:
-                              (context, index) => SizedBox(
-                                height: AppSizes.spacingMedium(context),
+              child: provider.notes.isEmpty
+                  ? ListView(
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.3,
+                        ),
+                        Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.note_outlined,
+                                size: AppSizes.iconLarge(context),
+                                color: Theme.of(context).disabledColor,
                               ),
-                          itemBuilder: (context, index) {
-                            final note = provider.notes[index];
-                            if (note.id == null) return const SizedBox.shrink();
+                              SizedBox(height: AppSizes.spacingMedium(context)),
+                              Text(
+                                localizations.getString('noTasks'),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                        color: Theme.of(context).disabledColor),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  : Padding(
+                      padding: EdgeInsets.all(AppSizes.paddingMedium),
+                      child: ListView.separated(
+                        itemCount: provider.notes.length,
+                        separatorBuilder: (context, index) =>
+                            SizedBox(height: AppSizes.spacingMedium(context)),
+                        itemBuilder: (context, index) {
+                          final note = provider.notes[index];
+                          if (note.id == null) return const SizedBox.shrink();
 
-                            return GestureDetector(
-                              onTap: () {
-                                context.go(
-                                  RoutePaths.editNote.replaceFirst(
-                                    ':id',
-                                    note.id!,
+                          return GestureDetector(
+                            onTap: () {
+                              context.go(
+                                RoutePaths.editNote.replaceFirst(':id', note.id!),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    spreadRadius: 1,
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2),
                                   ),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.1),
-                                      spreadRadius: 1,
-                                      blurRadius: 5,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                padding: EdgeInsets.all(AppSizes.paddingMedium),
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        provider.toggleNoteStatus(note.id!);
-                                      },
-                                      child: Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.grey.shade300,
-                                            width: 2,
-                                          ),
-                                          color:
-                                              note.isCompleted
-                                                  ? AppColors.primary
-                                                  : Colors.transparent,
+                                ],
+                              ),
+                              padding: EdgeInsets.all(AppSizes.paddingMedium),
+                              child: Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      provider.toggleNoteStatus(note.id!);
+                                    },
+                                    child: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                          width: 2,
                                         ),
-                                        child:
-                                            note.isCompleted
-                                                ? const Icon(
-                                                  Icons.check,
-                                                  color: Colors.white,
-                                                  size: 16,
-                                                )
-                                                : null,
+                                        color: note.isCompleted
+                                            ? AppColors.primary
+                                            : Colors.transparent,
                                       ),
+                                      child: note.isCompleted
+                                          ? const Icon(
+                                              Icons.check,
+                                              color: Colors.white,
+                                              size: 16,
+                                            )
+                                          : null,
                                     ),
-                                    SizedBox(
-                                      width: AppSizes.spacingMedium(context),
+                                  ),
+                                  SizedBox(
+                                      width: AppSizes.spacingMedium(context)),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                note.title,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  color: note.isCompleted
+                                                      ? Colors.grey.shade400
+                                                      : Colors.grey.shade800,
+                                                  decoration: note.isCompleted
+                                                      ? TextDecoration
+                                                          .lineThrough
+                                                      : null,
+                                                ),
+                                              ),
+                                            ),
+                                            Container(
+                                              width: 8,
+                                              height: 8,
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: _getPriorityColor(
+                                                  note.priority,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${localizations.getString('due')} ${_formatDate(note.dueDate)}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade500,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          final localizations =
+                                              AppLocalizations.of(context)!;
+                                          return AlertDialog(
+                                            title: Text(
+                                              localizations.getString(
+                                                'confirmDeleteTitle',
+                                              ),
+                                            ),
+                                            content: Text(
+                                              localizations.getString(
+                                                'confirmDeleteMessage',
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(context),
                                                 child: Text(
-                                                  note.title,
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color:
-                                                        note.isCompleted
-                                                            ? Colors
-                                                                .grey
-                                                                .shade400
-                                                            : Colors
-                                                                .grey
-                                                                .shade800,
-                                                    decoration:
-                                                        note.isCompleted
-                                                            ? TextDecoration
-                                                                .lineThrough
-                                                            : null,
+                                                  localizations.getString(
+                                                    'cancel',
                                                   ),
                                                 ),
                                               ),
-                                              Container(
-                                                width: 8,
-                                                height: 8,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: _getPriorityColor(
-                                                    note.priority,
+                                              TextButton(
+                                                onPressed: () async {
+                                                  Navigator.of(context).pop();
+                                                  final provider =
+                                                      Provider.of<NoteProvider>(
+                                                    context,
+                                                    listen: false,
+                                                  );
+                                                  await provider.deleteNote(
+                                                    note.id!,
+                                                  );
+                                                  if (provider.errorMessage ==
+                                                      null) {
+                                                    _showSnackBar(
+                                                      localizations.getString(
+                                                        provider.syncStatus ??
+                                                            'noteDeleted',
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    _showSnackBar(
+                                                      localizations.getString(
+                                                        provider.errorMessage!,
+                                                      ),
+                                                    );
+                                                  }
+                                                },
+                                                child: Text(
+                                                  localizations.getString(
+                                                    'delete',
+                                                  ),
+                                                  style: const TextStyle(
+                                                    color: Colors.red,
                                                   ),
                                                 ),
                                               ),
                                             ],
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${localizations.getString('due')} ${_formatDate(note.dueDate)}',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            final localizations =
-                                                AppLocalizations.of(context)!;
-                                            return AlertDialog(
-                                              title: Text(
-                                                localizations.getString(
-                                                  'confirmDeleteTitle',
-                                                ),
-                                              ),
-                                              content: Text(
-                                                localizations.getString(
-                                                  'confirmDeleteMessage',
-                                                ),
-                                              ),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed:
-                                                      () => Navigator.pop(
-                                                        context,
-                                                      ),
-                                                  child: Text(
-                                                    localizations.getString(
-                                                      'cancel',
-                                                    ),
-                                                  ),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () async {
-                                                    Navigator.of(context).pop();
-                                                    final provider =
-                                                        Provider.of<
-                                                          NoteProvider
-                                                        >(
-                                                          context,
-                                                          listen: false,
-                                                        );
-                                                    await provider.deleteNote(
-                                                      note.id!,
-                                                    );
-                                                    if (provider.errorMessage ==
-                                                        null) {
-                                                      _showSnackBar(
-                                                        localizations.getString(
-                                                          provider.syncStatus ??
-                                                              'noteDeleted',
-                                                        ),
-                                                      );
-                                                    } else {
-                                                      _showSnackBar(
-                                                        localizations.getString(
-                                                          provider
-                                                              .errorMessage!,
-                                                        ),
-                                                      );
-                                                    }
-                                                  },
-                                                  child: Text(
-                                                    localizations.getString(
-                                                      'delete',
-                                                    ),
-                                                    style: const TextStyle(
-                                                      color: Colors.red,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
+                    ),
             );
           },
         ),

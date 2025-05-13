@@ -1,5 +1,3 @@
-// frontend/lib/features/notes/presentation/screens/add_note_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +11,8 @@ import 'package:smartlist/routing/route_paths.dart';
 
 class AddNoteScreen extends StatefulWidget {
   final Note? noteToEdit;
-  final Function(String message, {String? actionLabel, VoidCallback? onAction}) onShowSnackBar;
+  final Function(String message, {String? actionLabel, VoidCallback? onAction})
+  onShowSnackBar;
 
   const AddNoteScreen({
     super.key,
@@ -36,8 +35,12 @@ class AddNoteScreenState extends State<AddNoteScreen> {
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.noteToEdit?.title ?? '');
-    _descriptionController = TextEditingController(text: widget.noteToEdit?.description ?? '');
+    _titleController = TextEditingController(
+      text: widget.noteToEdit?.title ?? '',
+    );
+    _descriptionController = TextEditingController(
+      text: widget.noteToEdit?.description ?? '',
+    );
     _dueDate = widget.noteToEdit?.dueDate;
     _priority = widget.noteToEdit?.priority ?? Priority.medium;
 
@@ -58,15 +61,17 @@ class AddNoteScreenState extends State<AddNoteScreen> {
     final initialNote = widget.noteToEdit;
     if (initialNote == null) {
       setState(() {
-        _hasChanges = _titleController.text.isNotEmpty ||
+        _hasChanges =
+            _titleController.text.isNotEmpty ||
             _descriptionController.text.isNotEmpty ||
             _dueDate != null ||
             _priority != Priority.medium;
       });
     } else {
       setState(() {
-        _hasChanges = _titleController.text != initialNote.title ||
-            _descriptionController.text != (initialNote.description ?? '') ||
+        _hasChanges =
+            _titleController.text != initialNote.title ||
+            _descriptionController.text != (initialNote.description) ||
             _dueDate != initialNote.dueDate ||
             _priority != initialNote.priority;
       });
@@ -113,85 +118,111 @@ class AddNoteScreenState extends State<AddNoteScreen> {
           // Add new note
           await noteProvider.addNote(newNote);
           if (noteProvider.errorMessage != null) {
-            widget.onShowSnackBar(localizations.getString(noteProvider.errorMessage!));
+            widget.onShowSnackBar(
+              localizations.getString(noteProvider.errorMessage!),
+            );
           } else {
-            widget.onShowSnackBar(localizations.getString(
-              isOnline ? (noteProvider.syncStatus ?? 'noteAdded') : 'savedOffline',
-            ));
+            widget.onShowSnackBar(
+              localizations.getString(
+                isOnline
+                    ? (noteProvider.syncStatus ?? 'noteAdded')
+                    : 'savedOffline',
+              ),
+            );
             if (context.mounted) {
-              context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
+              context.go(
+                RoutePaths.noteList,
+              ); // Sử dụng GoRouter thay Navigator.pop
             }
           }
         } else {
           // Update existing note
           await noteProvider.updateNote(newNote);
           if (noteProvider.errorMessage != null) {
-            widget.onShowSnackBar(localizations.getString(noteProvider.errorMessage!));
+            widget.onShowSnackBar(
+              localizations.getString(noteProvider.errorMessage!),
+            );
           } else {
-            widget.onShowSnackBar(localizations.getString(
-              isOnline ? (noteProvider.syncStatus ?? 'noteUpdated') : 'savedOffline',
-            ));
+            widget.onShowSnackBar(
+              localizations.getString(
+                isOnline
+                    ? (noteProvider.syncStatus ?? 'noteUpdated')
+                    : 'savedOffline',
+              ),
+            );
             if (context.mounted) {
-              context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
+              context.go(
+                RoutePaths.noteList,
+              ); // Sử dụng GoRouter thay Navigator.pop
             }
           }
         }
       } catch (e) {
         debugPrint('Error saving note: $e');
-        widget.onShowSnackBar(localizations.getString(
-          isOnline ? 'failedToAddNote' : 'savedOffline',
-        ));
+        widget.onShowSnackBar(
+          localizations.getString(
+            isOnline ? 'failedToAddNote' : 'savedOffline',
+          ),
+        );
         if (!isOnline && context.mounted) {
-          context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
+          context.go(
+            RoutePaths.noteList,
+          ); // Sử dụng GoRouter thay Navigator.pop
         }
       }
     }
   }
 
-  Future<bool> _onBackPressed() async {
+  Future<void> _onPopInvoked(bool didPop) async {
+    if (didPop) return; // If already popped, do nothing
+
     final localizations = AppLocalizations.of(context)!;
     if (!_hasChanges) {
-      return true;
+      if (context.mounted) {
+        context.go(RoutePaths.noteList);
+      }
+      return;
     }
 
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(localizations.getString('confirmExit')),
-        content: Text(localizations.getString('unsavedChanges')),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'cancel'),
-            child: Text(localizations.getString('cancel')),
+      builder:
+          (context) => AlertDialog(
+            title: Text(localizations.getString('confirmExit')),
+            content: Text(localizations.getString('unsavedChanges')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'cancel'),
+                child: Text(localizations.getString('cancel')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'discard'),
+                child: Text(
+                  localizations.getString('discard'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, 'save'),
+                child: Text(localizations.getString('save')),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'discard'),
-            child: Text(
-              localizations.getString('discard'),
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'save'),
-            child: Text(localizations.getString('save')),
-          ),
-        ],
-      ),
     );
 
     if (result == 'save') {
       await _saveNote();
-      return false; // Let _saveNote handle navigation
+    } else if (result == 'discard' && context.mounted) {
+      context.go(RoutePaths.noteList);
     }
-    return result == 'discard';
   }
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
 
-    return WillPopScope(
-      onWillPop: _onBackPressed,
+    return PopScope(
+      onPopInvoked: _onPopInvoked,
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -201,12 +232,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () async {
-              final shouldPop = await _onBackPressed();
-              if (shouldPop && context.mounted) {
-                context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.pop
-              }
-            },
+            onPressed: () => _onPopInvoked(false),
             color: Colors.grey,
           ),
           actions: [
@@ -231,12 +257,17 @@ class AddNoteScreenState extends State<AddNoteScreen> {
                     controller: _titleController,
                     decoration: InputDecoration(
                       labelText: localizations.getString('taskTitleHint'),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: AppColors.primary),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       hintText: localizations.getString('taskTitleHint'),
                     ),
                     validator: (value) {
@@ -251,19 +282,29 @@ class AddNoteScreenState extends State<AddNoteScreen> {
                     value: _priority,
                     decoration: InputDecoration(
                       labelText: localizations.getString('priority'),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: AppColors.primary),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                     ),
-                    items: Priority.values.map((priority) {
-                      return DropdownMenuItem<Priority>(
-                        value: priority,
-                        child: Text(localizations.getString(priority.name.capitalize())),
-                      );
-                    }).toList(),
+                    items:
+                        Priority.values.map((priority) {
+                          return DropdownMenuItem<Priority>(
+                            value: priority,
+                            child: Text(
+                              localizations.getString(
+                                priority.name.capitalize(),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                     onChanged: (value) {
                       if (value != null) {
                         setState(() {
@@ -279,13 +320,21 @@ class AddNoteScreenState extends State<AddNoteScreen> {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: localizations.getString('dueDate'),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(color: AppColors.primary),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        suffixIcon: const Icon(
+                          Icons.calendar_today,
+                          color: Colors.grey,
+                        ),
                       ),
                       child: Text(
                         _dueDate != null
@@ -299,12 +348,17 @@ class AddNoteScreenState extends State<AddNoteScreen> {
                     controller: _descriptionController,
                     decoration: InputDecoration(
                       labelText: localizations.getString('taskDescriptionHint'),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                         borderSide: BorderSide(color: AppColors.primary),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 16,
+                      ),
                       hintText: localizations.getString('taskDescriptionHint'),
                     ),
                     maxLines: null,

@@ -35,7 +35,7 @@ class NoteAdapter extends TypeAdapter<Note> {
   void write(BinaryWriter writer, Note obj) {
     writer.writeString(obj.id ?? '');
     writer.writeString(obj.title);
-    writer.writeString(obj.description ?? '');
+    writer.writeString(obj.description);
     writer.writeBool(obj.isCompleted);
     writer.write(obj.dueDate);
     writer.writeInt(obj.priority.index);

@@ -12,8 +12,7 @@ class NoteCard extends StatelessWidget {
     String message, {
     String? actionLabel,
     VoidCallback? onAction,
-  })
-  onShowSnackBar;
+  }) onShowSnackBar;
 
   const NoteCard({super.key, this.note, required this.onShowSnackBar});
 
@@ -47,7 +46,7 @@ class NoteCard extends StatelessWidget {
             onPressed: () async {
               if (note!.id != null) {
                 try {
-                  // await noteProvider.toggleNoteStatus(note!.id!);
+                  await noteProvider.toggleNoteStatus(note!.id!);
                 } catch (e) {
                   onShowSnackBar(localizations.getString('updateFailed'));
                 }
@@ -64,10 +63,10 @@ class NoteCard extends StatelessWidget {
           subtitle:
               note!.description.isNotEmpty
                   ? Text(
-                    note!.description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  )
+                      note!.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    )
                   : null,
           trailing: IconButton(
             icon: const Icon(Icons.delete),
@@ -93,15 +92,23 @@ class NoteCard extends StatelessWidget {
                 );
 
                 if (shouldDelete == true) {
-                  // final deletedNote = note!;
-                  // await noteProvider.deleteNote(note!.id!);
-                  // onShowSnackBar(
-                  //   localizations.getString('noteDeleted'),
-                  //   actionLabel: localizations.getString('undo'),
-                  //   onAction: () {
-                  //     noteProvider.addNote(deletedNote);
-                  //   },
-                  // );
+                  final deletedNote = note!;
+                  try {
+                    await noteProvider.deleteNote(note!.id!);
+                    onShowSnackBar(
+                      localizations.getString('noteDeleted'),
+                      actionLabel: localizations.getString('undo'),
+                      onAction: () async {
+                        try {
+                          await noteProvider.addNote(deletedNote);
+                        } catch (e) {
+                          onShowSnackBar(localizations.getString('undoFailed'));
+                        }
+                      },
+                    );
+                  } catch (e) {
+                    onShowSnackBar(localizations.getString('deleteFailed'));
+                  }
                 }
               }
             },

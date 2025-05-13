@@ -10,6 +10,7 @@ class Note {
   Priority priority;
   DateTime createdAt;
   DateTime updatedAt;
+  final String? audioUrl;
 
   Note({
     this.id,
@@ -20,6 +21,7 @@ class Note {
     this.priority = Priority.medium,
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.audioUrl,
   })  : createdAt = createdAt ?? DateTime.now(),
         updatedAt = updatedAt ?? DateTime.now();
 
@@ -32,6 +34,7 @@ class Note {
     Priority? priority,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? audioUrl,
   }) {
     return Note(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class Note {
       priority: priority ?? this.priority,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      audioUrl: audioUrl ?? this.audioUrl,
     );
   }
 
@@ -53,6 +57,7 @@ class Note {
         'priority': priority.name,
         'createdAt': createdAt.toUtc().toIso8601String(),
         'updatedAt': updatedAt.toUtc().toIso8601String(),
+        'audioUrl': audioUrl,
       };
 
   factory Note.fromJson(Map<String, dynamic> json, {String? id}) {
@@ -68,6 +73,7 @@ class Note {
       ),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      audioUrl: json['audioUrl'] as String?,
     );
   }
 }

@@ -1,5 +1,3 @@
-// frontend/lib/features/notes/presentation/screens/settings_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -37,25 +35,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _appVersion = 'Loading...'; // Class-level variable for app version
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchAppVersion();
+  }
+
   Future<void> _fetchAppVersion() async {
-
-    @override
-    void initState() {
-      super.initState();
-      _fetchAppVersion();
-    }
-
     try {
       final packageInfo = await PackageInfo.fromPlatform();
+      if (!mounted) return;
       setState(() {
-        _appVersion =
-            '${packageInfo.version} (Build ${packageInfo.buildNumber})';
+        _appVersion = '${packageInfo.version} (Build ${packageInfo.buildNumber})';
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _appVersion = 'Unknown';
       });
-      print("Error fetching app version: $e");
+      // Thay print bằng comment hoặc logging framework trong production
+      // logger.e("Error fetching app version: $e"); // Nếu dùng package logger
     }
   }
 
@@ -70,15 +69,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url));
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not launch calendar URL')),
         );
       }
+      if (!mounted) return;
       setState(() {
         _selectedIndex = 2; // Return to Setting tab
       });
     } else if (index == 0) {
+      if (!mounted) return;
       context.go(RoutePaths.noteList); // Sử dụng GoRouter thay Navigator.push
+      if (!mounted) return;
       setState(() {
         _selectedIndex = 2; // Return to Setting tab after notes
       });
@@ -250,7 +253,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ],
                         ),
                       ),
-                      // Example snippet for SettingsScreen
                       ListTile(
                         title: Text(
                           localizations.getString('changePassword'),
@@ -267,63 +269,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                           final shouldChange = await showDialog<bool>(
                             context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  title: Text(
-                                    localizations.getString('changePassword'),
-                                  ),
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextField(
-                                        controller: currentPasswordController,
-                                        decoration: InputDecoration(
-                                          labelText: localizations.getString(
-                                            'currentPassword',
-                                          ),
-                                        ),
-                                        obscureText: true,
-                                      ),
-                                      TextField(
-                                        controller: newPasswordController,
-                                        decoration: InputDecoration(
-                                          labelText: localizations.getString(
-                                            'newPassword',
-                                          ),
-                                        ),
-                                        obscureText: true,
-                                      ),
-                                    ],
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, false),
-                                      child: Text(
-                                        localizations.getString('cancel'),
+                            builder: (context) => AlertDialog(
+                              title: Text(
+                                localizations.getString('changePassword'),
+                              ),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  TextField(
+                                    controller: currentPasswordController,
+                                    decoration: InputDecoration(
+                                      labelText: localizations.getString(
+                                        'currentPassword',
                                       ),
                                     ),
-                                    TextButton(
-                                      onPressed:
-                                          () => Navigator.pop(context, true),
-                                      child: Text(
-                                        localizations.getString('change'),
+                                    obscureText: true,
+                                  ),
+                                  TextField(
+                                    controller: newPasswordController,
+                                    decoration: InputDecoration(
+                                      labelText: localizations.getString(
+                                        'newPassword',
                                       ),
                                     ),
-                                  ],
+                                    obscureText: true,
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: Text(
+                                    localizations.getString('cancel'),
+                                  ),
                                 ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: Text(
+                                    localizations.getString('change'),
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
 
                           if (shouldChange == true) {
                             try {
-                              final authProvider = Provider.of<AuthProvider>(
-                                context,
-                                listen: false,
-                              );
                               await authProvider.changePassword(
                                 currentPasswordController.text,
                                 newPasswordController.text,
                               );
+                              if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -332,10 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               );
                             } catch (e) {
-                              final authProvider = Provider.of<AuthProvider>(
-                                context,
-                                listen: false,
-                              );
+                              if (!mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -425,29 +418,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children:
                                 ['day', 'week', 'month'].map((view) {
-                                  return ListTile(
-                                    title: Text(
-                                      capitalize(view),
-                                      style: TextStyle(
-                                        color:
-                                            calendarView == view
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                              return ListTile(
+                                title: Text(
+                                  capitalize(view),
+                                  style: TextStyle(
+                                    color:
                                         calendarView == view
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handleCalendarViewChange(view),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    calendarView == view
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handleCalendarViewChange(view),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       SwitchListTile(
@@ -456,8 +449,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(color: Colors.grey),
                         ),
                         value: timeFormat,
-                        onChanged:
-                            (value) => setState(() => timeFormat = value),
+                        onChanged: (value) => setState(() => timeFormat = value),
                         secondary: Text(
                           localizations.getString('timeFormat'),
                           style: const TextStyle(
@@ -497,29 +489,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children:
                                 ['Sunday', 'Monday', 'Saturday'].map((day) {
-                                  return ListTile(
-                                    title: Text(
-                                      day,
-                                      style: TextStyle(
-                                        color:
-                                            firstDayOfWeek == day
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                              return ListTile(
+                                title: Text(
+                                  day,
+                                  style: TextStyle(
+                                    color:
                                         firstDayOfWeek == day
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handleFirstDayChange(day),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    firstDayOfWeek == day
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handleFirstDayChange(day),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                     ],
@@ -600,42 +592,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children:
                                 ['high', 'medium', 'low'].map((priority) {
-                                  return ListTile(
-                                    leading: Container(
-                                      width: 12,
-                                      height: 12,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color:
-                                            priority == 'high'
-                                                ? Colors.red
-                                                : priority == 'medium'
-                                                ? Colors.yellow
-                                                : Colors.green,
-                                      ),
-                                    ),
-                                    title: Text(
-                                      capitalize(priority),
-                                      style: TextStyle(
-                                        color:
-                                            defaultPriority == priority
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                              return ListTile(
+                                leading: Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color:
+                                        priority == 'high'
+                                            ? Colors.red
+                                            : priority == 'medium'
+                                            ? Colors.yellow
+                                            : Colors.green,
+                                  ),
+                                ),
+                                title: Text(
+                                  capitalize(priority),
+                                  style: TextStyle(
+                                    color:
                                         defaultPriority == priority
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handlePriorityChange(priority),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    defaultPriority == priority
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handlePriorityChange(priority),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ListTile(
@@ -669,31 +661,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children:
                                 ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'].map((
+                              format,
+                            ) {
+                              return ListTile(
+                                title: Text(
                                   format,
-                                ) {
-                                  return ListTile(
-                                    title: Text(
-                                      format,
-                                      style: TextStyle(
-                                        color:
-                                            dueDateFormat == format
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                                  style: TextStyle(
+                                    color:
                                         dueDateFormat == format
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handleDateFormatChange(format),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    dueDateFormat == format
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handleDateFormatChange(format),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ListTile(
@@ -732,29 +724,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   'title',
                                   'created date',
                                 ].map((sorting) {
-                                  return ListTile(
-                                    title: Text(
-                                      sorting,
-                                      style: TextStyle(
-                                        color:
-                                            noteSorting == sorting
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                              return ListTile(
+                                title: Text(
+                                  sorting,
+                                  style: TextStyle(
+                                    color:
                                         noteSorting == sorting
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handleSortingChange(sorting),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    noteSorting == sorting
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handleSortingChange(sorting),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                     ],
@@ -796,8 +788,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(color: Colors.black),
                         ),
                         value: noteReminders,
-                        onChanged:
-                            (value) => setState(() => noteReminders = value),
+                        onChanged: (value) => setState(() => noteReminders = value),
                       ),
                       SwitchListTile(
                         title: Text(
@@ -805,8 +796,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: const TextStyle(color: Colors.black),
                         ),
                         value: upcomingAlerts,
-                        onChanged:
-                            (value) => setState(() => upcomingAlerts = value),
+                        onChanged: (value) => setState(() => upcomingAlerts = value),
                       ),
                       ListTile(
                         title: Text(
@@ -839,29 +829,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           child: Column(
                             children:
                                 ['Chime', 'Bell', 'Ping', 'None'].map((sound) {
-                                  return ListTile(
-                                    title: Text(
-                                      sound,
-                                      style: TextStyle(
-                                        color:
-                                            notificationSound == sound
-                                                ? Colors.blue
-                                                : Colors.black,
-                                      ),
-                                    ),
-                                    tileColor:
+                              return ListTile(
+                                title: Text(
+                                  sound,
+                                  style: TextStyle(
+                                    color:
                                         notificationSound == sound
-                                            ? Colors.blue[50]
-                                            : null,
-                                    onTap: () => handleSoundChange(sound),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  );
-                                }).toList(),
+                                            ? Colors.blue
+                                            : Colors.black,
+                                  ),
+                                ),
+                                tileColor:
+                                    notificationSound == sound
+                                        ? Colors.blue[50]
+                                        : null,
+                                onTap: () => handleSoundChange(sound),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       SwitchListTile(
@@ -952,10 +942,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   textSize == 1
                                       ? 'Small'
                                       : textSize == 2
-                                      ? 'Medium'
-                                      : textSize == 3
-                                      ? 'Large'
-                                      : 'Extra Large',
+                                          ? 'Medium'
+                                          : textSize == 3
+                                              ? 'Large'
+                                              : 'Extra Large',
                                   style: const TextStyle(color: Colors.blue),
                                 ),
                               ],
@@ -967,9 +957,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               max: 4,
                               divisions: 3,
                               label: textSize.toString(),
-                              onChanged:
-                                  (value) =>
-                                      setState(() => textSize = value.toInt()),
+                              onChanged: (value) =>
+                                  setState(() => textSize = value.toInt()),
                             ),
                           ],
                         ),
@@ -1069,49 +1058,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onPressed: () async {
                   final shouldLogout = await showDialog<bool>(
                     context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: Text(localizations.getString('confirmLogout')),
-                          content: Text(
-                            localizations.getString('logoutConfirmation'),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: Text(localizations.getString('cancel')),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: Text(localizations.getString('logout')),
-                            ),
-                          ],
+                    builder: (context) => AlertDialog(
+                      title: Text(localizations.getString('confirmLogout')),
+                      content: Text(
+                        localizations.getString('logoutConfirmation'),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: Text(localizations.getString('cancel')),
                         ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: Text(localizations.getString('logout')),
+                        ),
+                      ],
+                    ),
                   );
 
                   if (shouldLogout == true) {
                     try {
                       await authProvider.logout();
-                      if (authProvider.errorMessage == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              localizations.getString('logoutSuccess'),
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            localizations.getString(
+                              authProvider.errorMessage != null
+                                  ? authProvider.errorMessage!
+                                  : 'logoutSuccess',
                             ),
                           ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              localizations.getString(
-                                    authProvider.errorMessage!,
-                                  ) ??
-                                  'logoutFailed',
-                            ),
-                          ),
-                        );
-                      }
+                        ),
+                      );
+                      context.go(RoutePaths.login);
                     } catch (e) {
+                      if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
@@ -1121,10 +1103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                       );
-                    } finally {
-                      context.go(
-                        RoutePaths.login,
-                      ); // Sử dụng GoRouter thay pushAndRemoveUntil
+                      context.go(RoutePaths.login);
                     }
                   }
                 },
@@ -1177,9 +1156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             border: Border.all(
               color:
-                  theme == themeValue
-                      ? AppColors.primary
-                      : Colors.grey.shade200,
+                  theme == themeValue ? AppColors.primary : Colors.grey.shade200,
             ),
             borderRadius: BorderRadius.circular(8),
             color: theme == themeValue ? Colors.blue[50] : null,

@@ -30,6 +30,9 @@ dependencies:
   path_provider: ^2.1.5
   package_info_plus: ^8.3.0
   flutter_launcher_icons: ^0.14.3
+  flutter_tts: ^4.2.2
+  record: ^6.0.0
+  flutter_sound: ^9.28.0
   
 
 dev_dependencies:

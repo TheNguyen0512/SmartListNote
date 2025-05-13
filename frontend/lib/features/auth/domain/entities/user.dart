@@ -15,8 +15,8 @@ class User {
     DateTime? updatedAt,
     this.displayName,
     this.photoUrl,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        updatedAt = updatedAt ?? DateTime.now();
+  }) : createdAt = createdAt ?? DateTime.now(),
+       updatedAt = updatedAt ?? DateTime.now();
 
   User copyWith({
     String? id,
@@ -51,8 +51,12 @@ class User {
     return User(
       id: json['id'] as String,
       email: json['email'] as String,
-      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(
+        json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      ),
+      updatedAt: DateTime.parse(
+        json['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
+      ),
       displayName: json['displayName'] as String?,
       photoUrl: json['photoUrl'] as String?,
     );
@@ -74,8 +78,12 @@ class UserModel extends User {
       return UserModel(
         id: json['id'] as String,
         email: json['email'] as String? ?? '',
-        createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-        updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
+        createdAt: DateTime.parse(
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+        ),
+        updatedAt: DateTime.parse(
+          json['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
+        ),
         displayName: json['displayName'] as String?,
         photoUrl: json['photoUrl'] as String?,
       );
@@ -90,10 +98,5 @@ class UserModel extends User {
         updatedAt: DateTime.now(),
       );
     }
-  }
-
-  @override
-  Map<String, dynamic> toJson() {
-    return super.toJson();
   }
 }
