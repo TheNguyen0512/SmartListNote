@@ -1,7 +1,7 @@
 
 # ✅ SmartList - Todo List App
 
-SmartList là một ứng dụng quản lý công việc đa nền tảng tích hợp các tính năng hiện đại như xác thực bằng Firebase, phân tích hiệu suất, cộng tác nhóm, nhập liệu bằng giọng nói, và hỗ trợ chế độ offline.
+SmartList là một ứng dụng quản lý công việc đa nền tảng tích hợp các tính năng hiện đại như xác thực bằng Firebase, phân tích hiệu suất, và hỗ trợ chế độ offline.
 
 ---
 
