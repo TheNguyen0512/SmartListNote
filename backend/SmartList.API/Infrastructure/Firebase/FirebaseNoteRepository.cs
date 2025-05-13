@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
 
 namespace SmartList.API.Infrastructure.Firebase
 {
@@ -204,7 +205,6 @@ namespace SmartList.API.Infrastructure.Firebase
 
                 await docRef.UpdateAsync(updates);
 
-                // Retrieve the updated document
                 snapshot = await docRef.GetSnapshotAsync();
                 var updatedNote = new Note
                 {
@@ -267,6 +267,50 @@ namespace SmartList.API.Infrastructure.Firebase
             {
                 Console.WriteLine($"Error deleting note {noteId} for userId: {userId}, Message: {ex.Message}");
                 throw new Exception($"Failed to delete note {noteId} for user {userId}", ex);
+            }
+        }
+
+        public async Task<List<Note>> GetNotesByDateRangeAsync(string userId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(userId))
+                {
+                    throw new ArgumentException("User ID cannot be null or empty", nameof(userId));
+                }
+
+                Console.WriteLine($"Querying notes for userId: {userId} from {startDate} to {endDate}");
+                var collection = _firestoreDb
+                    .Collection("users")
+                    .Document(userId)
+                    .Collection("notes");
+
+                var query = collection
+                    .WhereGreaterThanOrEqualTo("dueDate", startDate.ToUniversalTime())
+                    .WhereLessThanOrEqualTo("dueDate", endDate.ToUniversalTime());
+
+                var snapshot = await query.GetSnapshotAsync();
+
+                var notes = snapshot.Documents.Select(doc => new Note
+                {
+                    Id = doc.Id,
+                    Title = doc.GetValue<string>("title") ?? "",
+                    Description = doc.GetValue<string>("description") ?? "",
+                    IsCompleted = doc.GetValue<bool>("isCompleted"),
+                    DueDate = doc.GetValue<DateTime?>("dueDate"),
+                    Priority = doc.GetValue<string>("priority") ?? "medium",
+                    CreatedAt = doc.GetValue<DateTime>("createdAt"),
+                    UpdatedAt = doc.GetValue<DateTime>("updatedAt"),
+                    AudioUrl = doc.GetValue<string>("audioUrl")
+                }).ToList();
+
+                Console.WriteLine($"Found {notes.Count} notes for userId: {userId} in date range");
+                return notes;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error querying notes for userId: {userId} in date range, Message: {ex.Message}");
+                throw new Exception($"Failed to load notes for user {userId} in date range", ex);
             }
         }
     }

@@ -9,9 +9,136 @@ SmartList là một ứng dụng quản lý công việc đa nền tảng tích 
 
 ```
 todo_list_app/
-├── frontend/     # Flutter app: giao diện người dùng
-├── backend/      # ASP.NET Core API: xử lý và proxy Firebase
-└── README.md     # Tài liệu tổng
+├── frontend/                  # Flutter project (UI)
+│   ├── android/               # Android configuration
+│   ├── lib/                   # Flutter source code
+│   │   ├── core/              # Core utilities and shared resources
+│   │   │   ├── constants/     # Constants (colors, sizes, strings)
+│   │   │   │   ├── colors.dart
+│   │   │   │   ├── sizes.dart
+│   │   │   │   └── strings.dart
+│   │   │   ├── themes/        # App themes
+│   │   │   │   ├── app_theme.dart
+│   │   │   │   └── contextual_theme.dart
+│   │   │   ├── utils/         # Utility functions
+│   │   │   │   ├── date_utils.dart
+│   │   │   │   └── validation_utils.dart
+│   │   │   └── networking/
+│   │   │       └── hive/
+│   │   │           ├── hive_init.dart        # Khởi tạo Hive và adapter
+│   │   │           ├── hive_service.dart     # Dịch vụ Hive để quản lý cache và hàng đợi thao tác
+│   │   │           └── models/
+│   │   │           	└── operation.dart    # Model cho hàng đợi thao tác
+│   │   ├── routing/
+│   │   │   ├── app_router.dart
+│   │   │   ├── route_paths.dart
+│   │   │   └── navigation_observer.dart
+│   │   ├── features/          # App features (UI and state management)
+│   │   │   ├── auth/          # Authentication feature
+│   │   │   │   ├── domain/    # State management and entities
+│   │   │   │   │   ├── entities/
+│   │   │   │   │   │   └── user.dart
+│   │   │   │   │   └── providers/
+│   │   │   │   │       └── auth_provider.dart
+│   │   │   │   └── presentation/
+│   │   │   │       ├── screens/
+│   │   │   │       │   ├── login_screen.dart
+│   │   │   │       │   └── register_screen.dart
+│   │   │   │       └── widgets/
+│   │   │   │           ├── login_form.dart
+│   │   │   │           └── register_form.dart
+│   │   │   ├── setting/
+│   │   │   │   └── presentation/
+│   │   │   │       ├── screens/
+│   │   │   │       │   ├── help_center_screen.dart
+│   │   │   │       │   ├── privacy_policy_screen.dart
+│   │   │   │       │   ├── terms_of_service_screen.dart
+│   │   │   │       │   └── settings_screen.dart
+│   │   │   │       └── widgets/
+│   │   │   │            ├── about_help_card.dart
+│   │   │   │            ├── account_settings_card.dart
+│   │   │   │            ├── appearance_card.dart
+│   │   │   │            ├── calendar_preferences_card.dart
+│   │   │   │            ├── note_management_card.dart
+│   │   │   │            └── notifications_card.dart
+│   │   │   ├── Notes/         # Note management feature
+│   │   │   │   ├── domain/    # State management and entities
+│   │   │   │   │   ├── entities/
+│   │   │   │   │   │   └── note.dart
+│   │   │   │   │   └── providers/
+│   │   │   │   │       └── note_provider.dart
+│   │   │   │   └── presentation/
+│   │   │   │       ├── screens/
+│   │   │   │       │   ├── note_list_screen.dart
+│   │   │   │       │   ├── add_note_screen.dart
+│   │   │   │       ├── widgets/
+│   │   │   │       │   ├── note_card.dart
+│   │   │   │       │   └── note_form.dart
+│   │   │   │       └── components/
+│   │   │   │           └── priority_dropdown.dart
+│   │   │   └── analytics/     # Analytics feature
+│   │   │       ├── domain/
+│   │   │       │   └── analytics_provider.dart
+│   │   │       └── presentation/
+│   │   │           ├── screens/
+│   │   │           │   └── analytics_screen.dart
+│   │   │           └── widgets/
+│   │   │               ├── monthly_overview.dart
+│   │   │               ├── calendar_view.dart
+│   │   │               └── productivity_chart.dart
+│   │   ├── localization/      # Localization support
+│   │   │   ├── app_localizations.dart
+│   │   │   └── locale_provider.dart
+│   │   ├── app.dart           # App initialization
+│   │   └── main.dart          # Entry point
+│   ├── test/                  # Tests
+│   │   ├── unit/
+│   │   │   └── Note_provider_test.dart
+│   │   └── widget/
+│   │       └── Note_card_test.dart
+│   ├── pubspec.yaml           # Dependencies
+│   └── README.md              # Frontend documentation
+├── backend/                   # DotNet project (Firebase API proxy)
+│   ├── SmartList.API/         # ASP.NET Core project
+│   │   ├── Controllers/       # API controllers
+│   │   │   ├── NoteController.cs
+│   │   │   ├── AuthController.cs
+│   │   │   ├── AnalyticsController.cs
+│   │   ├── Domain/            # Data models
+│   │   │   └── Entities/
+│   │   │       ├── Note.cs
+│   │   │       ├── User.cs
+│   │   │       ├── Analytics.cs
+│   │   ├── Application/          # Firebase integration
+│   │   |	 ├── Interface/
+│   │   │   │   ├── INoteService.cs
+│   │   │   │   ├── IAuthService.cs
+│   │   │   │   ├── IAnalyticsService.cs
+│   │   │	 └── Services/
+│   │   │        ├── NoteService.cs
+│   │   │        ├── AuthService.cs
+│   │   │        ├── AnalyticsService.cs
+│   │   ├── Infrastructure/          # Firebase integration
+│   │   |	 ├── Interface/
+│   │   │   │   ├── INoteRepository.cs
+│   │   │   │   ├── IAuthRepository.cs
+│   │   │   │   ├── IAnalyticsRepository.cs
+│   │   │	 └── Firebase/
+│   │   │        ├── FirebaseNoteRepository.cs
+│   │   │        ├── FirebaseAuthRepository.cs
+│   │   │        ├── FirebaseAnalyticsRepository.cs
+│   │   ├── Program.cs         # Entry point
+│   │   └── SmartList.API.csproj # Project file
+│   ├── tests/                 # Backend tests
+│   │   ├── Controllers/
+│   │   │    └── NoteControllerTests.cs
+│   │   ├── Application/
+│   │   │   ├── NoteServiceTests.cs
+│   │   │   └── AuthServiceTests.cs
+│   │   └── Infrastructure/
+│   │    	 └── FirebaseNoteRepositoryTests.cs
+│   └── README.md              # Backend documentation
+└── README.md                  # Overall project documentation
 ```
 
 ---

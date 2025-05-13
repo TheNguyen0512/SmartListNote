@@ -62,13 +62,13 @@ class Note {
 
   factory Note.fromJson(Map<String, dynamic> json, {String? id}) {
     return Note(
-      id: id,
+      id: json['id'] ?? id,
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       isCompleted: json['isCompleted'] as bool? ?? false,
       dueDate: json['dueDate'] != null ? DateTime.parse(json['dueDate'] as String) : null,
       priority: Priority.values.firstWhere(
-        (e) => e.name == json['priority'],
+        (e) => e.name == (json['priority']?.toLowerCase() ?? 'medium'),
         orElse: () => Priority.medium,
       ),
       createdAt: DateTime.parse(json['createdAt'] as String),

@@ -33,6 +33,7 @@ dependencies:
   flutter_tts: ^4.2.2
   record: ^6.0.0
   flutter_sound: ^9.28.0
+  fl_chart: ^1.0.0
   
 
 dev_dependencies:

@@ -23,6 +23,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, FirebaseAuthRepository>();
 builder.Services.AddScoped<INoteRepository, FirebaseNoteRepository>();
 builder.Services.AddScoped<INoteService, NoteService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 
 // Configure JWT Authentication for Firebase
 builder.Services.AddAuthentication(options =>

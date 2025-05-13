@@ -158,6 +158,10 @@ class AppStrings {
       'saveAsText': 'Save as Text',
       'addVoiceInput': 'Add Voice Input',
       'audioAttached': 'Audio Attached',
+      'failedToLoadAnalytics': 'Failed to load analytics data',
+      "monthlyOverview" : "Monthly Overview",
+      "productivityChart": "Productivity chart",
+      "tasksFor": "Tasks for"
     },
     'vi': {
       'tasks': 'Công việc',
@@ -316,6 +320,10 @@ class AppStrings {
       'saveAsText': 'Lưu dưới dạng Văn bản',
       'addVoiceInput': 'Thêm Nhập liệu bằng giọng nói',
       'audioAttached': 'Âm thanh đã được đính kèm',
+      'failedToLoadAnalytics': 'Failed to load analytics data',
+      "monthlyOverview" : "Tổng quan hàng tháng",
+      "productivityChart": "Biểu đồ năng suất",
+      "tasksFor": "Nhiệm vụ cho"
     },
   };
 

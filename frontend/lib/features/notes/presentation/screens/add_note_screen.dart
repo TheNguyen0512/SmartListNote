@@ -87,7 +87,8 @@ class AddNoteScreenState extends State<AddNoteScreen> {
     );
     if (picked != null && picked != _dueDate) {
       setState(() {
-        _dueDate = picked;
+        // Normalize the picked date to UTC, but strip the time component
+        _dueDate = DateTime.utc(picked.year, picked.month, picked.day);
         _checkForChanges();
       });
     }
@@ -108,7 +109,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
         id: widget.noteToEdit?.id,
         title: _titleController.text,
         description: _descriptionController.text,
-        dueDate: _dueDate,
+        dueDate: _dueDate, // Already in UTC from _selectDueDate
         priority: _priority,
         isCompleted: widget.noteToEdit?.isCompleted ?? false,
       );
@@ -130,9 +131,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
               ),
             );
             if (context.mounted) {
-              context.go(
-                RoutePaths.noteList,
-              ); // Sử dụng GoRouter thay Navigator.pop
+              context.go(RoutePaths.noteList);
             }
           }
         } else {
@@ -151,9 +150,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
               ),
             );
             if (context.mounted) {
-              context.go(
-                RoutePaths.noteList,
-              ); // Sử dụng GoRouter thay Navigator.pop
+              context.go(RoutePaths.noteList);
             }
           }
         }
@@ -165,9 +162,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
           ),
         );
         if (!isOnline && context.mounted) {
-          context.go(
-            RoutePaths.noteList,
-          ); // Sử dụng GoRouter thay Navigator.pop
+          context.go(RoutePaths.noteList);
         }
       }
     }
@@ -338,7 +333,7 @@ class AddNoteScreenState extends State<AddNoteScreen> {
                       ),
                       child: Text(
                         _dueDate != null
-                            ? '${_dueDate!.day}/${_dueDate!.month}/${_dueDate!.year}'
+                            ? '${_dueDate!.toLocal().day}/${_dueDate!.toLocal().month}/${_dueDate!.toLocal().year}'
                             : localizations.getString('selectDueDate'),
                       ),
                     ),

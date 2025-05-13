@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:smartlist/core/constants/strings.dart';
+import 'package:smartlist/features/analytics/domain/analytics_provider.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/localization/locale_provider.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
@@ -20,6 +21,7 @@ class App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()..refreshAuthState()),
         ChangeNotifierProvider(create: (_) => NoteProvider()),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, child) {

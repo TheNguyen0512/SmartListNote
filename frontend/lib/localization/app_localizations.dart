@@ -145,7 +145,7 @@ class AppLocalizations {
   String get resetPasswordFailed => getString('resetPasswordFailed');
   String get userNotFound => getString('userNotFound');
   String get voiceInputTitle => getString('voiceInputTitle');
-  String get tapToRecord => getString('tapToRecord'); 
+  String get tapToRecord => getString('tapToRecord');
   String get recording => getString('recording');
   String get audioRecorded => getString('audioRecorded');
   String get playAudio => getString('playAudio');
@@ -154,6 +154,10 @@ class AppLocalizations {
   String get saveAsText => getString('saveAsText');
   String get addVoiceInput => getString('addVoiceInput');
   String get audioAttached => getString('audioAttached');
+  String get failedToLoadAnalytics => getString('failedToLoadAnalytics');
+  String get monthlyOverview => getString("monthlyOverview");
+  String get productivityChart => getString("productivityChart");
+  String get tasksFor => getString("tasksFor");
 
   String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
