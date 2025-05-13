@@ -24,8 +24,7 @@ todo_list_app/
 - **Flutter 3.x**
 - **Provider** – State management
 - **Firebase Auth & Firestore** – Đăng nhập, lưu trữ dữ liệu
-- **Localization** – Đa ngôn ngữ
-- **Voice Input** – Nhập liệu bằng giọng nói
+- **Localization** – Đa ngôn ng
 - **Custom Routing System** – Định tuyến có quản lý
 - **Hive** – Lưu trữ dữ liệu offline
 - **Connectivity Plus** – Theo dõi trạng thái kết nối mạng
@@ -35,7 +34,6 @@ todo_list_app/
 - Thêm, chỉnh sửa, xóa công việc
 - Phân loại công việc theo độ ưu tiên
 - Biểu đồ hiệu suất công việc
-- Giao việc theo nhóm (collaboration)
 - Giao diện đẹp, dễ sử dụng, hỗ trợ đa ngôn ngữ
 - **💾 Chế độ offline:** công việc được lưu cục bộ (bằng Hive) khi mất kết nối
 - **🔁 Đồng bộ tự động:** dữ liệu sẽ được đồng bộ với server khi thiết bị kết nối lại Internet
@@ -66,8 +64,6 @@ flutter run
 - Xác thực người dùng (qua Firebase)
 - API quản lý công việc (CRUD)
 - API thống kê công việc (analytics)
-- API cho cộng tác nhóm
-- API hỗ trợ nhập liệu bằng giọng nói
 - **📡 Xử lý đồng bộ dữ liệu:** nhận và xử lý các thay đổi từ client sau khi kết nối lại mạng
 
 ### ▶️ Khởi chạy API backend:

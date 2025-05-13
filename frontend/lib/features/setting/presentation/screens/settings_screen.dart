@@ -4,6 +4,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:smartlist/core/constants/colors.dart';
 import 'package:smartlist/core/constants/sizes.dart';
+import 'package:smartlist/features/setting/presentation/widgets/about_help_card.dart';
+import 'package:smartlist/features/setting/presentation/widgets/account_settings_card.dart';
+import 'package:smartlist/features/setting/presentation/widgets/appearance_card.dart';
+import 'package:smartlist/features/setting/presentation/widgets/calendar_preferences_card.dart';
+import 'package:smartlist/features/setting/presentation/widgets/note_management_card.dart';
+import 'package:smartlist/features/setting/presentation/widgets/notifications_card.dart';
 import 'package:smartlist/localization/app_localizations.dart';
 import 'package:smartlist/localization/locale_provider.dart';
 import 'package:smartlist/features/auth/domain/providers/auth_provider.dart';
@@ -142,6 +148,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  void handleTextSizeChange(int value) {
+    setState(() {
+      textSize = value;
+    });
+  }
+
+  void handleReminderChange(bool value) {
+    setState(() {
+      noteReminders = value;
+    });
+  }
+
+  void handleUpcomingAlertChange(bool value) {
+    setState(() {
+      upcomingAlerts = value;
+    });
+  }
+
+  void handleVibrationChange(bool value) {
+    setState(() {
+      vibration = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context)!;
@@ -159,898 +189,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: EdgeInsets.all(AppSizes.paddingMedium),
         child: Column(
           children: [
-            // Account Settings
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('accountSettings'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: const BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        title: Text(
-                          authProvider.user?.displayName ?? 'Unknown User',
-                          style: const TextStyle(fontWeight: FontWeight.normal),
-                        ),
-                        subtitle: Text(
-                          authProvider.user?.email ?? 'No email',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () {},
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('language'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            DropdownButton<String>(
-                              value: localeProvider.locale.languageCode,
-                              items: [
-                                DropdownMenuItem(
-                                  value: 'en',
-                                  child: Text(
-                                    localizations.getString('english'),
-                                  ),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'vi',
-                                  child: Text(
-                                    localizations.getString('vietnamese'),
-                                  ),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value != null) {
-                                  localeProvider.setLocale(
-                                    Locale(value, value == 'en' ? 'US' : 'VN'),
-                                  );
-                                }
-                              },
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(color: Colors.blue),
-                              underline: const SizedBox.shrink(),
-                              dropdownColor: Theme.of(context).cardColor,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('changePassword'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () async {
-                          final currentPasswordController =
-                              TextEditingController();
-                          final newPasswordController = TextEditingController();
-
-                          final shouldChange = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text(
-                                localizations.getString('changePassword'),
-                              ),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  TextField(
-                                    controller: currentPasswordController,
-                                    decoration: InputDecoration(
-                                      labelText: localizations.getString(
-                                        'currentPassword',
-                                      ),
-                                    ),
-                                    obscureText: true,
-                                  ),
-                                  TextField(
-                                    controller: newPasswordController,
-                                    decoration: InputDecoration(
-                                      labelText: localizations.getString(
-                                        'newPassword',
-                                      ),
-                                    ),
-                                    obscureText: true,
-                                  ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: Text(
-                                    localizations.getString('cancel'),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: Text(
-                                    localizations.getString('change'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (shouldChange == true) {
-                            try {
-                              await authProvider.changePassword(
-                                currentPasswordController.text,
-                                newPasswordController.text,
-                              );
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    localizations.getString('passwordChanged'),
-                                  ),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    localizations.getString(
-                                      authProvider.errorMessage ??
-                                          'changePasswordFailed',
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('exportData'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            AccountSettingsCard(),
+            CalendarPreferencesCard(
+              calendarView: calendarView,
+              timeFormat: timeFormat,
+              firstDayOfWeek: firstDayOfWeek,
+              showDropdown: showDropdown,
+              onCalendarViewChange: handleCalendarViewChange,
+              onFirstDayChange: handleFirstDayChange,
+              onTimeFormatChange: (value) => setState(() => timeFormat = value),
+              toggleDropdown: toggleDropdown,
             ),
-
-            // Calendar Preferences
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('calendarPreferences'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        title: Text(
-                          localizations.getString('calendarView'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              capitalize(calendarView),
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'calendarView'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('calendarView'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('calendarView'),
-                      ),
-                      if (showDropdown == 'calendarView')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                ['day', 'week', 'month'].map((view) {
-                              return ListTile(
-                                title: Text(
-                                  capitalize(view),
-                                  style: TextStyle(
-                                    color:
-                                        calendarView == view
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    calendarView == view
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handleCalendarViewChange(view),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      SwitchListTile(
-                        title: Text(
-                          timeFormat ? '24h' : '12h',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        value: timeFormat,
-                        onChanged: (value) => setState(() => timeFormat = value),
-                        secondary: Text(
-                          localizations.getString('timeFormat'),
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('firstDayOfWeek'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              firstDayOfWeek,
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'firstDay'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('firstDay'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('firstDay'),
-                      ),
-                      if (showDropdown == 'firstDay')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                ['Sunday', 'Monday', 'Saturday'].map((day) {
-                              return ListTile(
-                                title: Text(
-                                  day,
-                                  style: TextStyle(
-                                    color:
-                                        firstDayOfWeek == day
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    firstDayOfWeek == day
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handleFirstDayChange(day),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
+            NoteManagementCard(
+              defaultPriority: defaultPriority,
+              dueDateFormat: dueDateFormat,
+              noteSorting: noteSorting,
+              showDropdown: showDropdown,
+              onPriorityChange: handlePriorityChange,
+              onDateFormatChange: handleDateFormatChange,
+              onSortingChange: handleSortingChange,
+              toggleDropdown: toggleDropdown,
             ),
-
-            // Note Management
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('taskManagement'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        title: Text(
-                          localizations.getString('defaultTaskPriority'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color:
-                                    defaultPriority == 'high'
-                                        ? Colors.red
-                                        : defaultPriority == 'medium'
-                                        ? Colors.yellow
-                                        : Colors.green,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              capitalize(defaultPriority),
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'priority'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('priority'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('priority'),
-                      ),
-                      if (showDropdown == 'priority')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                ['high', 'medium', 'low'].map((priority) {
-                              return ListTile(
-                                leading: Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color:
-                                        priority == 'high'
-                                            ? Colors.red
-                                            : priority == 'medium'
-                                            ? Colors.yellow
-                                            : Colors.green,
-                                  ),
-                                ),
-                                title: Text(
-                                  capitalize(priority),
-                                  style: TextStyle(
-                                    color:
-                                        defaultPriority == priority
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    defaultPriority == priority
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handlePriorityChange(priority),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('taskDueDateFormat'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              dueDateFormat,
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'dateFormat'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('dateFormat'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('dateFormat'),
-                      ),
-                      if (showDropdown == 'dateFormat')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                ['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'].map((
-                              format,
-                            ) {
-                              return ListTile(
-                                title: Text(
-                                  format,
-                                  style: TextStyle(
-                                    color:
-                                        dueDateFormat == format
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    dueDateFormat == format
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handleDateFormatChange(format),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('taskSortingPreferences'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              noteSorting,
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'sorting'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('sorting'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('sorting'),
-                      ),
-                      if (showDropdown == 'sorting')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                [
-                                  'due date',
-                                  'priority',
-                                  'title',
-                                  'created date',
-                                ].map((sorting) {
-                              return ListTile(
-                                title: Text(
-                                  sorting,
-                                  style: TextStyle(
-                                    color:
-                                        noteSorting == sorting
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    noteSorting == sorting
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handleSortingChange(sorting),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
+            NotificationsCard(
+              noteReminders: noteReminders,
+              upcomingAlerts: upcomingAlerts,
+              notificationSound: notificationSound,
+              vibration: vibration,
+              showDropdown: showDropdown,
+              onReminderChange: handleReminderChange,
+              onUpcomingAlertChange: handleUpcomingAlertChange,
+              onSoundChange: handleSoundChange,
+              onVibrationChange: handleVibrationChange,
+              toggleDropdown: toggleDropdown,
             ),
-
-            // Notifications
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('notifications'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      SwitchListTile(
-                        title: Text(
-                          localizations.getString('taskDueReminders'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        value: noteReminders,
-                        onChanged: (value) => setState(() => noteReminders = value),
-                      ),
-                      SwitchListTile(
-                        title: Text(
-                          localizations.getString('upcomingTasksAlerts'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        value: upcomingAlerts,
-                        onChanged: (value) => setState(() => upcomingAlerts = value),
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('notificationSound'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              notificationSound,
-                              style: const TextStyle(color: Colors.blue),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                showDropdown == 'sound'
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                color: Colors.grey,
-                              ),
-                              onPressed: () => toggleDropdown('sound'),
-                            ),
-                          ],
-                        ),
-                        onTap: () => toggleDropdown('sound'),
-                      ),
-                      if (showDropdown == 'sound')
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            children:
-                                ['Chime', 'Bell', 'Ping', 'None'].map((sound) {
-                              return ListTile(
-                                title: Text(
-                                  sound,
-                                  style: TextStyle(
-                                    color:
-                                        notificationSound == sound
-                                            ? Colors.blue
-                                            : Colors.black,
-                                  ),
-                                ),
-                                tileColor:
-                                    notificationSound == sound
-                                        ? Colors.blue[50]
-                                        : null,
-                                onTap: () => handleSoundChange(sound),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      SwitchListTile(
-                        title: Text(
-                          localizations.getString('vibration'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        value: vibration,
-                        onChanged: (value) => setState(() => vibration = value),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            AppearanceCard(
+              theme: theme,
+              textSize: textSize,
+              onThemeChange: handleThemeChange,
+              onTextSizeChange: handleTextSizeChange,
             ),
-
-            // Appearance
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('appearance'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            Text(
-                              localizations.getString('theme'),
-                              style: const TextStyle(color: Colors.black),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildThemeButton(
-                                  'light',
-                                  Icons.wb_sunny,
-                                  'Light',
-                                ),
-                                _buildThemeButton(
-                                  'dark',
-                                  Icons.nightlight_round,
-                                  'Dark',
-                                ),
-                                _buildThemeButton(
-                                  'system',
-                                  Icons.brightness_auto,
-                                  'System',
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  localizations.getString('textSize'),
-                                  style: const TextStyle(color: Colors.black),
-                                ),
-                                Text(
-                                  textSize == 1
-                                      ? 'Small'
-                                      : textSize == 2
-                                          ? 'Medium'
-                                          : textSize == 3
-                                              ? 'Large'
-                                              : 'Extra Large',
-                                  style: const TextStyle(color: Colors.blue),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Slider(
-                              value: textSize.toDouble(),
-                              min: 1,
-                              max: 4,
-                              divisions: 3,
-                              label: textSize.toString(),
-                              onChanged: (value) =>
-                                  setState(() => textSize = value.toInt()),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // About & Help
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey, width: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      localizations.getString('aboutHelp'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      ListTile(
-                        title: Text(
-                          localizations.getString('helpCenter'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {
-                          context.push(RoutePaths.helpCenter);
-                        },
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('privacyPolicy'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {
-                          context.push(RoutePaths.privacyPolicy);
-                        },
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('termsOfService'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey,
-                        ),
-                        onTap: () {
-                          context.push(RoutePaths.termsOfService);
-                        },
-                      ),
-                      ListTile(
-                        title: Text(
-                          localizations.getString('version'),
-                          style: const TextStyle(color: Colors.black),
-                        ),
-                        subtitle: Text(
-                          _appVersion,
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
+            AboutHelpCard(appVersion: _appVersion),
             // Logout Button
             Padding(
               padding: const EdgeInsets.only(top: 16),
@@ -1155,8 +333,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             border: Border.all(
-              color:
-                  theme == themeValue ? AppColors.primary : Colors.grey.shade200,
+              color: theme == themeValue ? AppColors.primary : Colors.grey.shade200,
             ),
             borderRadius: BorderRadius.circular(8),
             color: theme == themeValue ? Colors.blue[50] : null,
